@@ -647,10 +647,14 @@
             let newX = originalButtonX + Math.cos(angle) * distance;
             let newY = originalButtonY + Math.sin(angle) * distance;
 
+            console.log('🎯 DODGE #1 - Before clamping: newX=' + newX.toFixed(1) + ', newY=' + newY.toFixed(1));
+
             // ===== CLAMPING LOGIC #1: Radius constraint (100px from original position) =====
             // Ensure button stays within 100px radius of where it started
             newX = Math.max(originalButtonX - DODGE_RADIUS, Math.min(originalButtonX + DODGE_RADIUS, newX));
             newY = Math.max(originalButtonY - DODGE_RADIUS, Math.min(originalButtonY + DODGE_RADIUS, newY));
+
+            console.log('🎯 DODGE #2 - After radius clamping: newX=' + newX.toFixed(1) + ', newY=' + newY.toFixed(1) + ' (radius: [' + (originalButtonX - DODGE_RADIUS).toFixed(1) + '-' + (originalButtonX + DODGE_RADIUS).toFixed(1) + '])');
 
             // ===== CLAMPING LOGIC #2: Viewport bounds constraint =====
             // ALSO ensure button never goes off-screen, even if original position is near edges
@@ -660,6 +664,8 @@
             // Bottom edge: ensure y + button height <= window height
             newX = Math.max(0, Math.min(window.innerWidth - button.offsetWidth, newX));
             newY = Math.max(0, Math.min(window.innerHeight - button.offsetHeight, newY));
+
+            console.log('🎯 DODGE #3 - After viewport clamping: newX=' + newX.toFixed(1) + ', newY=' + newY.toFixed(1) + ' (viewport: [0-' + (window.innerWidth - button.offsetWidth).toFixed(1) + '], window size: ' + window.innerWidth + 'x' + window.innerHeight + ')');
 
             button.style.left = newX + 'px';
             button.style.top = newY + 'px';
@@ -674,9 +680,13 @@
         // Flag to control dodging behavior
         let shouldDodge = true;
 
-        // Initialize position on page load
+        // Initialize position on page load and on window resize
         window.addEventListener('load', initializeButtonPosition);
+        window.addEventListener('resize', initializeButtonPosition);
         initializeButtonPosition();
+
+        // Debug logging
+        console.log('Initial button position captured. originalButtonX:', originalButtonX, 'originalButtonY:', originalButtonY);
 
         // Handle No button click - shows the "pretty please" modal
         function handleNoButtonClick() {
