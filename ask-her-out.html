@@ -442,7 +442,7 @@
     <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
     <header class="nav">
-        <div class="logo">MARK<i></i></div>
+        <div class="logo"><span data-name="upper">MARK</span><i></i></div>
         <nav class="nav-links" aria-hidden="true"><span>The question</span><span>The romantic</span><span>The plan</span></nav>
         <div class="nav-right">
             <button class="icon-btn" id="musicBtn" type="button" aria-label="Play music" aria-pressed="false" title="Music">
@@ -470,7 +470,7 @@
 
         <section class="me-card" aria-label="About Mark">
             <figure class="me-photo">
-                <img src="Pics/mark.jpg" alt="Mark in a black coat, looking up hopefully" width="480" height="720">
+                <img src="Pics/mark.jpg" alt="Him in a black coat, looking up hopefully" width="480" height="720">
                 <figcaption>your man, waiting 🖤</figcaption>
             </figure>
             <div class="me-body">
@@ -478,7 +478,7 @@
                     <span class="kicker">The hopeless romantic</span>
                     <span class="online"><i></i>online · nervous</span>
                 </div>
-                <h2>Mark, <span class="grad">still</span> falling for you every day.</h2>
+                <h2><span data-name>Mark</span>, <span class="grad">still</span> falling for you every day.</h2>
                 <p>Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</p>
                 <div class="stats">
                     <div class="stat"><small>Butterflies, still</small><b data-count="98" data-suffix="%">0%</b>
@@ -571,7 +571,7 @@
                     <div><small>When</small><b id="tWhen"></b></div>
                     <div><small>Time</small><b id="tTime"></b></div>
                     <div><small>Plan</small><b id="tPlan"></b></div>
-                    <div><small>With</small><b>Mark 🖤</b></div>
+                    <div><small>With</small><b><span data-name>Mark</span> 🖤</b></div>
                     <div class="ticket-note hidden" id="tNote"></div>
                 </div>
             </div>
@@ -587,13 +587,28 @@
 
     <script>
     (() => {
-        const MARK_EMAIL = 'joemarkloarbasa96@gmail.com';
-        const FORMSPREE_URL = 'https://formspree.io/f/xoeqarab';
-        const SONG_ID = 'RgOIt-jOz-k';
+        /* ================= Make it yours =================
+           Everything personal lives here. Change these, swap the photos in Pics/, and it's your page.
+           The headline and the rest of the wording are plain text in the HTML above. */
+        const CONFIG = {
+            name: 'Mark',                                           // shown in the logo, the card, the ticket and messages
+            email: 'joemarkloarbasa96@gmail.com',                   // added as a guest on the Google Calendar invite
+            formspreeUrl: 'https://formspree.io/f/xoeqarab',        // where her answer is sent (make your own at formspree.io)
+            songId: 'RgOIt-jOz-k',                                  // YouTube video ID of the background song
+            photo: 'Pics/mark.jpg'                                  // your photo on the "hopeless romantic" card
+        };
+        const MARK_EMAIL = CONFIG.email;
+        const FORMSPREE_URL = CONFIG.formspreeUrl;
+        const SONG_ID = CONFIG.songId;
+        const NAME = CONFIG.name;
 
         const $ = (s, root = document) => root.querySelector(s);
         const rand = (a, b) => a + Math.random() * (b - a);
         const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+        document.querySelectorAll('[data-name]').forEach(el => { el.textContent = el.dataset.name === 'upper' ? NAME.toUpperCase() : NAME; });
+        document.querySelector('.me-photo img').src = CONFIG.photo;
+        document.querySelector('.me-card').setAttribute('aria-label', 'About ' + NAME);
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         let saidYes = false;
 
@@ -1132,7 +1147,7 @@
         async function sendToMark() {
             const v = lastDate;
             sendStatus.className = 'send-status';
-            sendStatus.textContent = 'Sending to Mark…';
+            sendStatus.textContent = `Sending to ${NAME}…`;
             const data = new FormData();
             data.append('_subject', 'She said yes to our date! 💕');
             data.append('date', v.day);
@@ -1146,10 +1161,10 @@
                 const res = await fetch(FORMSPREE_URL, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
                 if (!res.ok) throw new Error(res.status);
                 sendStatus.className = 'send-status ok';
-                sendStatus.textContent = '✓ Sent to Mark. He\'s probably screaming right now.';
+                sendStatus.textContent = `✓ Sent to ${NAME}. He's probably screaming right now.`;
             } catch {
                 sendStatus.className = 'send-status err';
-                sendStatus.innerHTML = 'Couldn\'t reach Mark\'s inbox. <button type="button">Try again</button>';
+                sendStatus.innerHTML = `Couldn't reach ${NAME}'s inbox. <button type="button">Try again</button>`;
                 sendStatus.querySelector('button').addEventListener('click', sendToMark);
             }
         }

@@ -24,6 +24,26 @@ A question sits under a moving night sky: "Can I steal you for a date, love?", w
 
 A single HTML file: plain CSS and JavaScript, no frameworks, no build step, nothing to install. The sky is drawn on a canvas; the cat is a 20×14 pixel sprite drawn in code. The only outside pieces are Google Fonts, Formspree for the answer, and the YouTube IFrame API for the music. It works on phones, respects "reduce motion" (the sky and cat hold still), and the pop-ups work with a keyboard.
 
+## Make your own
+
+This page is mine, but you're welcome to a copy.
+
+1. **Get the code.** Fork this repo on GitHub, or use **Code → Download ZIP**.
+2. **Put in your details.** Open `ask-her-out.html`, find `const CONFIG` near the top of the `<script>`, and change:
+   - `name`: your name (logo, card, ticket, messages)
+   - `email`: your email, added as a guest on the Google Calendar invite
+   - `formspreeUrl`: make a free form at [formspree.io](https://formspree.io) and paste its URL, so the answers go to *your* inbox and not mine
+   - `songId`: the YouTube video ID of your song (the part after `watch?v=`)
+   - `photo`: your photo
+3. **Swap the pictures** in `Pics/`: your photo, plus the four cat stickers if you like.
+4. **Change the words.** The headline, the card text and the lines the cat says are plain text in `ask-her-out.html`. Search for "Can I steal you", "still falling" and `CAT_LINES`.
+5. **Put it online.** Turn on GitHub Pages (Settings → Pages → deploy from `main`), or import the repo into [Vercel](https://vercel.com) or Netlify. There's no build step.
+6. **Update the link preview.** Change the `og:` tags in `index.html` and `ask-her-out.html` to your own URL.
+
+## What's next
+
+A live version where anyone can make their own page without touching code: sign in, fill in a form, get a link. It'll use Supabase for the data and Vercel for hosting. The plan is in [`docs/supabase-vercel-plan.md`](docs/supabase-vercel-plan.md). Notes for working on this repo with Claude Code are in [`CLAUDE.md`](CLAUDE.md).
+
 ## History
 
 The first version was the second thing I ever shipped: a white card, a No button that dodged the mouse, and a lot of `console.log`s. The rebuild keeps the idea and fixes what the first one got wrong. The calendar invite used to land at the wrong time (7 PM showed up as 11 AM in the Philippines), the date could show a day early in the Americas, and on phones she could simply tap No.
