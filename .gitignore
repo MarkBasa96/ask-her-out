@@ -1,0 +1,6 @@
+.env
+.env.*
+.vercel
+supabase/.temp
+supabase/.branches
+node_modules

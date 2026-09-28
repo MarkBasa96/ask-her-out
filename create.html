@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Make Your Date Page 🌅</title>
+    <meta name="description" content="Ask your love out with a page of your own: a moving night sky, a No button that never gives up, and a date planner.">
+    <meta name="theme-color" content="#06060b">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Make your own date page 🌅">
+    <meta property="og:description" content="Fill in a form, get a link, send it. The No button never gives up.">
+    <link rel="icon" href="Pics/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="Pics/icon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="Pics/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700&family=Inter:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+    <style>
+        .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; margin-top: 26px; align-items: start; }
+        .form { padding: 22px 22px 24px; }
+        .step { display: flex; align-items: center; gap: 10px; font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 1.15rem; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
+        .step:first-child { margin-top: 0; padding-top: 0; border: 0; }
+        .step b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; background: var(--sun); box-shadow: 0 0 14px -2px rgba(255, 90, 95, .8); }
+        .label em { text-transform: none; letter-spacing: 0; font-style: normal; }
+
+        .roles { display: flex; gap: 7px; flex-wrap: wrap; }
+        .choice { position: relative; }
+        .choice input { position: absolute; opacity: 0; pointer-events: none; }
+        .choice span { display: block; padding: 8px 14px; border-radius: 99px; font-size: .86rem; cursor: pointer; border: 1px solid var(--line); background: var(--glass); }
+        .choice input:checked + span { background: #f5f2ef; color: #16131a; font-weight: 600; border-color: transparent; }
+        .choice input:focus-visible + span { outline: 2px solid #ffb07a; outline-offset: 2px; }
+
+        .drop { display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 16px; border: 1.5px dashed rgba(255, 160, 130, .45); background: rgba(255, 90, 95, .06); cursor: pointer; }
+        .drop:hover { background: rgba(255, 90, 95, .1); }
+        .drop .thumb { width: 64px; height: 80px; border-radius: 12px; flex: none; background: rgba(255, 255, 255, .06) center / cover no-repeat; display: grid; place-items: center; font-size: 1.4rem; }
+        .drop .thumb.has { font-size: 0; }
+        .drop div { font-size: .86rem; color: #dcd6e2; min-width: 0; }
+        .drop small { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; }
+
+        .slug { display: flex; align-items: center; border-radius: 13px; border: 1px solid var(--line); background: rgba(0, 0, 0, .25); overflow: hidden; transition: border-color .2s, box-shadow .2s; }
+        .slug:focus-within { border-color: rgba(255, 120, 95, .8); box-shadow: 0 0 0 4px rgba(255, 90, 95, .15); }
+        .slug span { padding: 12px 0 12px 14px; color: var(--muted); font-size: .93rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+        .slug input { flex: 1; min-width: 0; background: none; border: 0; outline: none; padding: 12px 14px 12px 1px; font-size: .93rem; font-weight: 600; }
+        .field:focus { border-color: rgba(255, 120, 95, .8); box-shadow: 0 0 0 4px rgba(255, 90, 95, .15); }
+
+        .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .86rem; color: #dcd6e2; cursor: pointer; }
+        .check input { margin-top: 3px; accent-color: #ff6f7d; }
+        .check small { display: block; color: var(--muted); font-size: .76rem; }
+        details { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+        summary { cursor: pointer; font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 1.02rem; color: #dcd6e2; }
+
+        .publish { width: 100%; margin-top: 24px; }
+        .fine { text-align: center; font-size: .76rem; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
+        .fine.err { color: #ffb0a0; }
+
+        /* live phone preview: the real date page in an iframe, at phone size */
+        .preview { position: sticky; top: 84px; }
+        .preview > .kicker { display: block; text-align: center; margin-bottom: 10px; }
+        .phone { width: 293px; height: 611px; margin: 0 auto; border-radius: 42px; padding: 10px; background: #111; border: 1px solid #2a2730;
+            box-shadow: 0 40px 90px -20px rgba(0, 0, 0, .9), 0 0 80px -30px rgba(255, 90, 95, .6); }
+        .screen { position: relative; width: 273px; height: 591px; border-radius: 33px; overflow: hidden; background: #06060b; }
+        .screen iframe { width: 390px; height: 844px; border: 0; transform: scale(.7); transform-origin: 0 0; display: block; }
+        .preview-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+
+        .done { max-width: 560px; margin: 30px auto 0; padding: 26px 22px 22px; text-align: center; }
+        .done .sticker { width: 150px; height: 148px; margin: 0 auto 14px; transform: rotate(3deg); }
+        .done h2 { font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 1.8rem; letter-spacing: -.02em; }
+        .done p { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+        .linkbox { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 6px 6px 6px 14px; border-radius: 13px; border: 1px solid var(--line); background: rgba(0, 0, 0, .25); font-size: .88rem; text-align: left; }
+        .linkbox span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ffd0b8; }
+        .acts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: minmax(0, 1fr); }
+            .preview { position: static; order: -1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nebula" aria-hidden="true"><i></i><i></i></div>
+    <div class="stars" aria-hidden="true"></div>
+    <div class="arc" aria-hidden="true"></div>
+
+    <header class="nav">
+        <a class="logo" href="create.html" style="text-decoration:none"><img class="logo-mark" src="Pics/icon.svg" alt="" width="26" height="26">DATE PAGE<i></i></a>
+        <nav class="nav-links"><a class="on" href="create.html" aria-current="page">Create</a><a href="dashboard.html">My pages</a></nav>
+        <div class="nav-right"></div>
+    </header>
+
+    <div class="wrap">
+        <span class="kicker">Make your own</span>
+        <h1>Ask your love out, <span>beautifully</span>.</h1>
+        <p class="lead">Fill this in, get a link, send it. The No button never gives up.</p>
+
+        <div id="app"></div>
+    </div>
+
+    <template id="builderTpl">
+        <div class="layout">
+            <form class="glass form" id="form" novalidate>
+                <div class="step"><b>1</b>You two</div>
+                <div class="row">
+                    <div><label class="label" for="fName">Your name</label><input class="field" id="fName" maxlength="40" placeholder="Jamie" required autocomplete="given-name"></div>
+                    <div><label class="label" for="fPet">What you call them</label><input class="field" id="fPet" maxlength="24" value="love" placeholder="love"></div>
+                </div>
+                <span class="label" id="roleLabel">You're their…</span>
+                <div class="roles" role="radiogroup" aria-labelledby="roleLabel">
+                    <label class="choice"><input type="radio" name="role" value="boyfriend"><span>Boyfriend</span></label>
+                    <label class="choice"><input type="radio" name="role" value="girlfriend"><span>Girlfriend</span></label>
+                    <label class="choice"><input type="radio" name="role" value="partner" checked><span>Partner</span></label>
+                </div>
+
+                <div class="step"><b>2</b>The question</div>
+                <label class="label" for="fHeadline">Headline</label>
+                <input class="field" id="fHeadline" maxlength="90" value="Can I steal you for a date, love?" required>
+                <p class="hint">The word right before the first comma glows in the sunset colour.</p>
+                <label class="label" for="fLead">Under the headline</label>
+                <input class="field" id="fLead" maxlength="160" value="You already have my heart. Now I'd like your calendar.">
+
+                <div class="step"><b>3</b>Your card</div>
+                <span class="label">Your photo <em>(optional)</em></span>
+                <label class="drop" for="fPhoto">
+                    <span class="thumb" id="thumb">📷</span>
+                    <div><span id="photoName">Add a photo of you</span><small>JPG, PNG or WebP · we shrink it for you · tap to choose</small>
+                        <button type="button" class="link-btn hidden" id="removePhoto">Remove photo</button></div>
+                </label>
+                <input class="sr-only" type="file" id="fPhoto" accept="image/jpeg,image/png,image/webp">
+                <label class="label" for="fCardTitle">Card title</label>
+                <input class="field" id="fCardTitle" maxlength="90" placeholder="Jamie, still falling for you every day.">
+                <p class="hint">The word right after the first comma glows.</p>
+                <label class="label" for="fCardBody">A few words about you</label>
+                <textarea class="field" id="fCardBody" maxlength="400">Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</textarea>
+
+                <div class="step"><b>4</b>Music</div>
+                <label class="label" for="fSong">YouTube link <em>(optional)</em></label>
+                <input class="field" id="fSong" inputmode="url" placeholder="https://youtu.be/… (leave empty for our default song)">
+                <p class="hint" id="songHint">Plays softly and loops. It unmutes on their first tap.</p>
+
+                <div class="step"><b>5</b>Your link</div>
+                <label class="label" for="fSlug">Pick a link</label>
+                <div class="slug"><span id="slugPrefix">/p/</span><input id="fSlug" maxlength="40" placeholder="jamie-and-sam" autocapitalize="off" spellcheck="false" required></div>
+                <p class="hint" id="slugHint">Lowercase letters, numbers and dashes.</p>
+                <label class="check"><input type="checkbox" id="fGuest" checked>
+                    <span>Add me as a guest on the calendar invite<small id="guestNote">Your email will be in the page so the invite can include you.</small></span></label>
+
+                <details>
+                    <summary>Extras: what the cat says</summary>
+                    <label class="label" for="fCat">One line per row <em>(optional)</em></label>
+                    <textarea class="field" id="fCat" rows="4" placeholder="psst… they're still crazy about you 💕"></textarea>
+                    <p class="hint">Leave empty for the cat's usual sweet talk.</p>
+                </details>
+
+                <button class="btn btn-sun publish" type="submit" id="publish">Publish my page →</button>
+                <p class="fine" id="fine" aria-live="polite"></p>
+            </form>
+
+            <aside class="preview" aria-label="Live preview">
+                <span class="kicker">Live preview</span>
+                <div class="phone"><div class="screen"><iframe id="previewFrame" title="Preview of your page" tabindex="-1"></iframe></div></div>
+                <div class="preview-actions"><a class="btn btn-glass btn-small" id="fullPreview" href="ask-her-out.html?preview=1" target="_blank" rel="noopener">Open full preview ↗</a></div>
+            </aside>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="site.js"></script>
+    <script>
+    (async () => {
+        const app = $('#app');
+        const user = await currentUser();
+        if (!user) {
+            renderSignIn(app, { title: 'Sign in to start', text: 'Enter your email and we\'ll send you a magic link. No password.' });
+            return;
+        }
+        renderUser(user);
+        app.append($('#builderTpl').content.cloneNode(true));
+
+        const form = $('#form'), fine = $('#fine'), frame = $('#previewFrame');
+        const f = id => $('#' + id);
+        const editId = new URLSearchParams(location.search).get('edit');
+        let editing = null, photoBlob = null, photoBlobUrl = '', photoPath = null, removeOld = false;
+        let slugTouched = false, titleTouched = false, slugOk = true;
+
+        $('#slugPrefix').textContent = pageLink('').replace(/^https?:\/\//, '');
+
+        // How many pages they have, for the limit
+        const { count } = await sb.from('pages').select('id', { count: 'exact', head: true }).eq('owner_id', user.id);
+        const pageCount = count || 0;
+
+        if (editId) {
+            const { data, error } = await sb.from('pages').select('*').eq('id', editId).eq('owner_id', user.id).maybeSingle();
+            if (error || !data) { fine.className = 'fine err'; fine.textContent = 'Couldn\'t find that page.'; }
+            else {
+                editing = data;
+                slugTouched = titleTouched = true;
+                f('fName').value = data.sender_name;
+                f('fPet').value = data.pet_name;
+                form.querySelector(`input[name="role"][value="${data.role}"]`).checked = true;
+                f('fHeadline').value = data.headline;
+                f('fLead').value = data.lead;
+                f('fCardTitle').value = data.card_title || '';
+                f('fCardBody').value = data.card_body || '';
+                f('fSong').value = data.song_id ? 'https://youtu.be/' + data.song_id : '';
+                f('fSlug').value = data.slug;
+                f('fGuest').checked = !!data.calendar_email;
+                f('fCat').value = (data.cat_lines || []).join('\n');
+                photoPath = data.photo_path;
+                showPhoto(photoUrl(photoPath), 'Current photo');
+                $('#publish').textContent = 'Save changes →';
+                document.title = 'Edit your date page 🌅';
+            }
+        } else if (pageCount >= PAGE_LIMIT) {
+            fine.className = 'fine err';
+            fine.textContent = `You already have ${PAGE_LIMIT} pages. Delete one on your dashboard to make another.`;
+            $('#publish').disabled = true;
+        }
+        if (!editing && pageCount < PAGE_LIMIT) fine.textContent = `This will be page ${pageCount + 1} of ${PAGE_LIMIT} · you can edit or delete it any time`;
+
+        const slugify = s => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+        const songId = s => {
+            s = s.trim();
+            if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+            const m = s.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);
+            return m ? m[1] : null;
+        };
+
+        function draft() {
+            const name = f('fName').value.trim();
+            const lines = f('fCat').value.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 30).map(l => l.slice(0, 120));
+            return {
+                slug: f('fSlug').value.trim(),
+                sender_name: name,
+                pet_name: f('fPet').value.trim() || 'love',
+                role: form.querySelector('input[name="role"]:checked').value,
+                headline: f('fHeadline').value.trim() || 'Can I steal you for a date, love?',
+                lead: f('fLead').value.trim(),
+                card_title: f('fCardTitle').value.trim() || null,
+                card_body: f('fCardBody').value.trim() || null,
+                song_id: songId(f('fSong').value),
+                calendar_email: f('fGuest').checked ? user.email : null,
+                cat_lines: lines.length ? lines : null
+            };
+        }
+
+        // ----- live preview: the real page reads the draft from localStorage -----
+        let previewTimer;
+        function updatePreview() {
+            clearTimeout(previewTimer);
+            previewTimer = setTimeout(() => {
+                if (!form.isConnected) return;
+                const d = draft();
+                d.sender_name = d.sender_name || 'You';
+                d.photo_url = photoBlobUrl || (removeOld ? '' : photoUrl(photoPath));
+                try { localStorage.setItem('dp-preview', JSON.stringify(d)); } catch {}
+                frame.src = 'ask-her-out.html?preview=' + Date.now();
+            }, 500);
+        }
+
+        // ----- fields that help each other -----
+        f('fName').addEventListener('input', () => {
+            const name = f('fName').value.trim();
+            if (!titleTouched) f('fCardTitle').value = name ? `${name}, still falling for you every day.` : '';
+            if (!slugTouched) { f('fSlug').value = name ? slugify(name) + '-date' : ''; checkSlug(); }
+        });
+        f('fCardTitle').addEventListener('input', () => { titleTouched = true; });
+        f('fSlug').addEventListener('input', () => {
+            slugTouched = true;
+            const clean = f('fSlug').value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-{2,}/g, '-');
+            if (clean !== f('fSlug').value) f('fSlug').value = clean;
+            checkSlug();
+        });
+        f('fSong').addEventListener('input', () => {
+            const v = f('fSong').value.trim(), hint = $('#songHint');
+            hint.className = 'hint' + (v && !songId(v) ? ' err' : v ? ' ok' : '');
+            hint.textContent = !v ? 'Plays softly and loops. It unmutes on their first tap.' : songId(v) ? '✓ Found it. It unmutes on their first tap.' : 'That doesn\'t look like a YouTube link.';
+        });
+        f('fGuest').addEventListener('change', () => { $('#guestNote').textContent = f('fGuest').checked ? 'Your email will be in the page so the invite can include you.' : 'The invite won\'t include you. You\'ll still see answers on your dashboard.'; });
+
+        let slugTimer;
+        function checkSlug() {
+            const s = f('fSlug').value, hint = $('#slugHint');
+            clearTimeout(slugTimer);
+            slugOk = false;
+            if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(s)) {
+                hint.className = 'hint' + (s ? ' err' : '');
+                hint.textContent = s ? '3–40 lowercase letters, numbers and dashes (not at the ends).' : 'Lowercase letters, numbers and dashes.';
+                return;
+            }
+            hint.className = 'hint';
+            hint.textContent = 'Checking…';
+            slugTimer = setTimeout(async () => {
+                const { data } = await sb.from('pages').select('id').eq('slug', s).maybeSingle();
+                if (!form.isConnected || f('fSlug').value !== s) return;
+                slugOk = !data || (editing && data.id === editing.id);
+                hint.className = 'hint ' + (slugOk ? 'ok' : 'err');
+                hint.textContent = slugOk ? '✓ That one\'s free' : 'That link is taken. Try another one.';
+            }, 400);
+        }
+
+        // ----- photo: shrink it in the browser (also drops location data from phone photos) -----
+        function showPhoto(url, name) {
+            const t = $('#thumb');
+            t.style.backgroundImage = url ? `url("${url}")` : '';
+            t.classList.toggle('has', !!url);
+            $('#photoName').textContent = url ? name : 'Add a photo of you';
+            $('#removePhoto').classList.toggle('hidden', !url);
+        }
+
+        async function shrink(file) {
+            const bmp = await createImageBitmap(file);
+            const scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(bmp.width * scale);
+            c.height = Math.round(bmp.height * scale);
+            c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+            for (const q of [0.85, 0.72, 0.6]) {
+                const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+                if (blob.size <= 1.9 * 1024 * 1024) return blob;
+            }
+            throw new Error('Payload too large');
+        }
+
+        f('fPhoto').addEventListener('change', async () => {
+            const file = f('fPhoto').files[0];
+            if (!file) return;
+            if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast('Use a JPG, PNG or WebP photo'); return; }
+            try {
+                photoBlob = await shrink(file);
+                if (photoBlobUrl) URL.revokeObjectURL(photoBlobUrl);
+                photoBlobUrl = URL.createObjectURL(photoBlob);
+                removeOld = !!photoPath;
+                showPhoto(photoBlobUrl, `${file.name} · ${(photoBlob.size / 1024 / 1024).toFixed(1)} MB`);
+                updatePreview();
+            } catch { toast('Couldn\'t read that photo. Try another one.'); }
+        });
+        $('#removePhoto').addEventListener('click', e => {
+            e.preventDefault();
+            photoBlob = null;
+            if (photoBlobUrl) URL.revokeObjectURL(photoBlobUrl);
+            photoBlobUrl = '';
+            removeOld = !!photoPath;
+            f('fPhoto').value = '';
+            showPhoto('', '');
+            updatePreview();
+        });
+
+        form.addEventListener('input', updatePreview);
+        form.addEventListener('change', updatePreview);
+        $('#fullPreview').addEventListener('click', () => updatePreview());
+
+        // ----- publish -----
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const d = draft();
+            const say = t => { fine.className = 'fine err'; fine.textContent = t; };
+            if (!d.sender_name) return say('Add your name first.');
+            if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(d.slug)) return say('Pick a link: 3–40 lowercase letters, numbers and dashes.');
+            if (!slugOk) return say('That link is taken. Try another one.');
+            if (f('fSong').value.trim() && !d.song_id) return say('That doesn\'t look like a YouTube link.');
+
+            const btn = $('#publish');
+            btn.disabled = true;
+            fine.className = 'fine';
+            fine.textContent = 'Publishing…';
+            let uploaded = null;
+            try {
+                if (photoBlob) {
+                    uploaded = `${user.id}/${crypto.randomUUID()}.jpg`;
+                    const up = await sb.storage.from('photos').upload(uploaded, photoBlob, { contentType: 'image/jpeg', cacheControl: '31536000' });
+                    if (up.error) { uploaded = null; throw up.error; }
+                }
+                const row = { ...d, photo_path: uploaded || (removeOld ? null : photoPath) };
+                const res = editing
+                    ? await sb.from('pages').update(row).eq('id', editing.id).select().single()
+                    : await sb.from('pages').insert(row).select().single();
+                if (res.error) throw res.error;
+                // Clean up the photo this page no longer uses
+                if (photoPath && removeOld) await sb.storage.from('photos').remove([photoPath]);
+                showDone(res.data);
+            } catch (err) {
+                if (uploaded) await sb.storage.from('photos').remove([uploaded]);
+                btn.disabled = false;
+                say(friendlyError(err));
+            }
+        });
+
+        function showDone(page) {
+            clearTimeout(previewTimer);
+            clearTimeout(slugTimer);
+            const link = pageLink(page.slug);
+            try { localStorage.removeItem('dp-preview'); } catch {}
+            app.innerHTML = `
+                <div class="glass done">
+                    <img class="sticker" src="Pics/cat-kiss.jpg" alt="Two cats, one kissing the other on the cheek" width="235" height="232">
+                    <h2>${editing ? 'Saved. ' : ''}Your page is live 🌅</h2>
+                    <p>Send this link to them. Their answer will show up on your dashboard.</p>
+                    <div class="linkbox"><span></span><button class="btn btn-sun btn-small" type="button" data-copy>Copy link</button></div>
+                    <div class="acts">
+                        <a class="btn btn-glass btn-small" target="_blank" rel="noopener" data-open>Open ↗</a>
+                        <button class="btn btn-glass btn-small" type="button" data-share>Share…</button>
+                        <a class="btn btn-glass btn-small" href="dashboard.html">Go to my pages</a>
+                    </div>
+                </div>`;
+            app.querySelector('.linkbox span').textContent = link.replace(/^https?:\/\//, '');
+            app.querySelector('[data-open]').href = link;
+            app.querySelector('[data-copy]').addEventListener('click', () => copyText(link));
+            const share = app.querySelector('[data-share]');
+            if (!navigator.share) share.remove();
+            else share.addEventListener('click', () => navigator.share({ title: page.headline, url: link }).catch(() => {}));
+            scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        f('fSong').dispatchEvent(new Event('input'));
+        if (f('fSlug').value) checkSlug();
+        updatePreview();
+    })();
+    </script>
+</body>
+</html>

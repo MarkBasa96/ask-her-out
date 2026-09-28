@@ -14,7 +14,9 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
+    <link rel="icon" href="Pics/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="Pics/icon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="Pics/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700&family=Inter:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
@@ -117,6 +119,7 @@
 
         .logo { font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 1.1rem; letter-spacing: .03em; display: flex; gap: 3px; }
         .logo i { width: 7px; height: 7px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 10px #ff7a2f; }
+        .logo-mark { width: 26px; height: 26px; border-radius: 7px; margin-right: 6px; align-self: center; box-shadow: 0 0 14px -4px rgba(255, 90, 95, 0.8); }
 
         .nav-links { display: flex; gap: 26px; font-size: .88rem; color: #bdb8c4; }
         .nav-links span:first-child { color: #fff; }
@@ -248,18 +251,17 @@
         .stat svg { display: block; width: 100%; height: 18px; margin-top: 2px; }
 
         /* ---------- Pixel cat ---------- */
+        /* The cat walks above everything, pop-ups included. Taps pass through it so it never blocks a button;
+           a tap on it still makes it talk (see the cat's click listener). */
         .cat {
-            position: fixed; left: 0; top: 0; z-index: 5; width: 80px; height: 56px;
-            cursor: pointer; touch-action: manipulation; will-change: transform;
+            position: fixed; left: 0; top: 0; z-index: 70; width: 80px; height: 56px;
+            pointer-events: none; will-change: transform;
         }
-
-        /* In front of the words it lets taps pass through, so it never blocks the buttons */
-        .cat.front { z-index: 26; pointer-events: none; }
         .cat canvas { width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; display: block; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); }
         .cat.left canvas { transform: scaleX(-1); }
 
         .bubble {
-            position: fixed; left: 0; top: 0; z-index: 27; width: max-content; max-width: 210px;
+            position: fixed; left: 0; top: 0; z-index: 71; width: max-content; max-width: 210px;
             padding: 9px 13px; border-radius: 14px; font-size: .85rem; font-weight: 600; line-height: 1.35; text-align: left;
             color: #2a1d2c; background: #fff8f1;
             box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 0 2px #2a1a12;
@@ -432,17 +434,78 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
+
+        /* ---------- Welcome: the page waits, blurred, until the first tap (so the song can start with sound) ---------- */
+        .nav, main { transition: filter .9s ease; }
+        body.welcoming { overflow: hidden; }
+        body.welcoming .nav, body.welcoming main { filter: blur(12px) saturate(1.1); pointer-events: none; }
+        body.welcoming .cat, body.welcoming .bubble { visibility: hidden; }
+
+        .welcome {
+            position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px;
+            background: radial-gradient(closest-side, rgba(6, 6, 11, 0.2), rgba(6, 6, 11, 0.65));
+            transition: opacity .7s ease, visibility .7s;
+        }
+        .welcome.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+        .welcome.gone .welcome-card { transform: scale(.94) translateY(10px); }
+        .welcome-card { text-align: center; width: min(430px, 100%); transition: transform .7s cubic-bezier(.34, 1.56, .64, 1); }
+        .welcome-says {
+            position: relative; display: inline-block; margin-bottom: 10px; padding: 8px 14px; border-radius: 14px;
+            font-size: .95rem; font-weight: 600; color: #2a1d2c; background: #fff8f1;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), 0 0 0 2px #2a1a12;
+        }
+        .welcome-says::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -7px; border: 7px solid transparent; border-top-color: #fff8f1; }
+        .welcome-cat { width: 240px; height: 168px; margin: 0 auto; animation: bob 2.6s ease-in-out infinite; }
+        .welcome-cat canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 30px rgba(255, 110, 90, 0.25)); }
+        @keyframes bob { 50% { transform: translateY(-7px); } }
+        .welcome .kicker { display: block; margin-top: 18px; }
+        .welcome h2 { font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: clamp(1.7rem, 5.4vw, 2.3rem); line-height: 1.08; letter-spacing: -.03em; margin: 8px auto 0; max-width: 16ch; }
+        .welcome h2 .grad { background: var(--sun-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .welcome .btn { margin-top: 22px; font-size: 1.08rem; padding: 16px 34px; }
+        .welcome-hint { margin-top: 12px; font-size: .8rem; color: var(--muted); }
+        .custom-loading .welcome-card { visibility: hidden; }
+        .no-welcome .welcome { display: none; }
+        .no-welcome body.welcoming .nav, .no-welcome body.welcoming main { filter: none; transition: none; }
+        @media (max-width: 720px) { .welcome-cat { width: 200px; height: 140px; } }
+
+        /* ---------- Pages made with the public builder (/p/<slug>) ---------- */
+        .custom-loading .nav, .custom-loading main, .custom-loading .cat, .custom-loading .bubble { visibility: hidden; }
+        .me-card.no-photo { grid-template-columns: 1fr; }
+        .page-foot { margin-top: 26px; display: flex; gap: 16px; justify-content: center; font-size: .78rem; color: var(--muted); }
+        .page-foot a, .page-foot button { color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+        .page-foot a:hover, .page-foot button:hover { color: #ffd0b8; }
+        .missing { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; text-align: center; }
+        .missing .panel { transform: none; }
+        .missing .btn { margin-top: 18px; }
     </style>
+    <script>
+        // Someone else's page from the public builder: hide Mark's words until theirs have loaded
+        if (/^\/p\/[^/]+\/?$/.test(location.pathname) || /[?&](p|preview)=/.test(location.search)) document.documentElement.classList.add('custom-loading');
+        // The builder's live preview reloads on every keystroke, so it skips the welcome from the first frame
+        if (/[?&]preview=/.test(location.search)) document.documentElement.classList.add('no-welcome');
+    </script>
 </head>
-<body>
+<body class="welcoming">
     <div class="nebula" aria-hidden="true"><i></i><i></i><i></i></div>
     <canvas id="sky" aria-hidden="true"></canvas>
     <div class="arc-glow" aria-hidden="true"></div>
     <div class="arc" aria-hidden="true"></div>
     <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
+    <!-- Welcome: a big pixel cat says hi. Tapping "Open it" clears the blur and starts the song with sound -->
+    <div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+        <div class="welcome-card">
+            <p class="welcome-says" id="welcomeSays">hi!! 👋</p>
+            <div class="welcome-cat" aria-hidden="true"><canvas width="20" height="14"></canvas></div>
+            <span class="kicker">A little something for you</span>
+            <h2 id="welcomeTitle"><span data-name>Mark</span> has a <span class="grad">question</span> for you, <span id="welcomePet">love</span></h2>
+            <button class="btn btn-sun" id="welcomeBtn" type="button">Open it 💌</button>
+            <p class="welcome-hint">🔊 Sound on for the full effect</p>
+        </div>
+    </div>
+
     <header class="nav">
-        <div class="logo"><span data-name="upper">MARK</span><i></i></div>
+        <div class="logo"><img class="logo-mark" src="Pics/icon.svg" alt="" width="26" height="26"><span data-name="upper">MARK</span><i></i></div>
         <nav class="nav-links" aria-hidden="true"><span>The question</span><span>The romantic</span><span>The plan</span></nav>
         <div class="nav-right">
             <button class="icon-btn" id="musicBtn" type="button" aria-label="Play music" aria-pressed="false" title="Music">
@@ -459,8 +522,8 @@
 
     <main>
         <div class="badge"><em>New</em> A date request from your boyfriend ›</div>
-        <h1>Can I steal you for a <span>date</span>, love?</h1>
-        <p class="lead">You already have my heart. Now I'd like your calendar.</p>
+        <h1 id="headline">Can I steal you for a <span>date</span>, love?</h1>
+        <p class="lead" id="leadText">You already have my heart. Now I'd like your calendar.</p>
 
         <div class="answer">
             <button class="btn btn-sun" id="yesBtn" type="button" data-yes>Yes, my love →</button>
@@ -478,8 +541,8 @@
                     <span class="kicker">The hopeless romantic</span>
                     <span class="online"><i></i>online · nervous</span>
                 </div>
-                <h2><span data-name>Mark</span>, <span class="grad">still</span> falling for you every day.</h2>
-                <p>Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</p>
+                <h2 id="cardTitle"><span data-name>Mark</span>, <span class="grad">still</span> falling for you every day.</h2>
+                <p id="cardBody">Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</p>
                 <div class="stats">
                     <div class="stat"><small>Butterflies, still</small><b data-count="98" data-suffix="%">0%</b>
                         <svg viewBox="0 0 100 18" preserveAspectRatio="none"><polyline fill="none" stroke="#ff8a4a" stroke-width="1.8" points="0,15 15,12 30,13 45,8 60,9 75,4 100,2"/></svg></div>
@@ -586,7 +649,7 @@
     <div id="player"></div>
 
     <script>
-    (() => {
+    (async () => {
         /* ================= Make it yours =================
            Everything personal lives here. Change these, swap the photos in Pics/, and it's your page.
            The headline and the rest of the wording are plain text in the HTML above. */
@@ -597,20 +660,111 @@
             songId: 'RgOIt-jOz-k',                                  // YouTube video ID of the background song
             photo: 'Pics/mark.jpg'                                  // your photo on the "hopeless romantic" card
         };
-        const MARK_EMAIL = CONFIG.email;
+
+        /* ================= Pages made with the public builder =================
+           /p/<slug> (Vercel) or ?p=<slug> loads someone else's page from Supabase and swaps in their words.
+           With neither, nothing below runs and this stays Mark's page, exactly as above.
+           ?preview=1 is the builder's live preview: it reads the draft from localStorage and never saves answers.
+           The publishable key is public by design; Row Level Security protects the data. */
+        const SUPABASE_URL = 'https://xrjkwjcftuthdgdebxwg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_chg_qwfzBHba_GZZZRFGyw__jI7v4oe';
+        const SLUG = (location.pathname.match(/^\/p\/([a-z0-9-]{3,40})\/?$/) || [])[1] || new URLSearchParams(location.search).get('p');
+        const PREVIEW = new URLSearchParams(location.search).has('preview');
+        const ROOT = location.pathname.startsWith('/p/') ? '/' : '';   // /p/<slug> is one folder deep
+        const PAGE = (SLUG || PREVIEW) ? await loadPage() : null;
+        if ((SLUG || PREVIEW) && !PAGE) return pageMissing();
+
+        async function loadPage() {
+            if (PREVIEW) {
+                try { return JSON.parse(localStorage.getItem('dp-preview')) || null; } catch { return null; }
+            }
+            const cols = 'id,slug,sender_name,pet_name,role,headline,lead,card_title,card_body,photo_path,song_id,calendar_email,cat_lines';
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/pages?slug=eq.${encodeURIComponent(SLUG)}&select=${cols}&limit=1`, { headers: { apikey: SUPABASE_KEY } });
+                if (!res.ok) return null;
+                const row = (await res.json())[0];
+                if (row && row.photo_path) row.photo_url = `${SUPABASE_URL}/storage/v1/object/public/photos/${row.photo_path}`;
+                return row || null;
+            } catch { return null; }
+        }
+
+        function pageMissing() {
+            document.documentElement.classList.remove('custom-loading');
+            document.querySelectorAll('.nav, main, .cat, .bubble, .welcome').forEach(el => el.remove());
+            document.body.classList.remove('welcoming');
+            document.body.insertAdjacentHTML('beforeend', `<div class="missing"><div class="panel">
+                <img class="sticker" src="${ROOT}Pics/cat-heart.jpg" alt="" width="172" height="148" style="width:150px;height:130px;margin:0 auto 14px;transform:rotate(-4deg)">
+                <h2>This page isn't available</h2><p class="sub">The link may be mistyped, or the page was taken down.</p>
+                <a class="btn btn-sun" href="${ROOT}create.html">Make your own date page →</a></div></div>`);
+        }
+
+        const MARK_EMAIL = PAGE ? PAGE.calendar_email : CONFIG.email;
         const FORMSPREE_URL = CONFIG.formspreeUrl;
-        const SONG_ID = CONFIG.songId;
-        const NAME = CONFIG.name;
+        const SONG_ID = PAGE ? (PAGE.song_id || CONFIG.songId) : CONFIG.songId;
+        const NAME = PAGE ? PAGE.sender_name : CONFIG.name;
 
         const $ = (s, root = document) => root.querySelector(s);
         const rand = (a, b) => a + Math.random() * (b - a);
         const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
         document.querySelectorAll('[data-name]').forEach(el => { el.textContent = el.dataset.name === 'upper' ? NAME.toUpperCase() : NAME; });
-        document.querySelector('.me-photo img').src = CONFIG.photo;
+        document.querySelector('.me-photo img').src = PAGE ? (PAGE.photo_url || '') : CONFIG.photo;
         document.querySelector('.me-card').setAttribute('aria-label', 'About ' + NAME);
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         let saidYes = false;
+        let welcoming = !PREVIEW;   // the welcome screen is up until "Open it" is tapped
+
+        // Wording for builder pages. "He" only fits Mark, so these use the creator's name instead.
+        const ROLE = PAGE ? PAGE.role : 'boyfriend';
+        const MAN = PAGE ? ({ boyfriend: 'your man', girlfriend: 'your girl' }[ROLE] || NAME) : 'your man';
+        if (PAGE) applyPage();
+
+        function applyPage() {
+            const text = (sel, v) => { if (v != null && v !== '') $(sel).textContent = v; };
+            // The word before the first comma glows (or the last word, with no comma), like "date" in Mark's headline
+            const glow = (el, str, afterComma) => {
+                const m = afterComma ? str.match(/^([^,]*,\s*)(\S+)(.*)$/) : str.match(/^(.*?)([^\s,?!.]+)(\s*,.*|[?!.]*)$/);
+                el.textContent = '';
+                if (!m) return void (el.textContent = str);
+                const span = document.createElement('span');
+                if (afterComma) span.className = 'grad';
+                span.textContent = m[2];
+                el.append(m[1], span, m[3]);
+            };
+            glow($('#headline'), PAGE.headline, false);
+            text('#leadText', PAGE.lead);
+            if (PAGE.card_title) glow($('#cardTitle'), PAGE.card_title, true);
+            text('#cardBody', PAGE.card_body);
+            const pet = PAGE.pet_name || 'love';
+            $('.badge').lastChild.textContent = ` A date request from your ${ROLE} ›`;
+            $('#yesBtn').textContent = `Yes, my ${pet} →`;
+            $('#welcomePet').textContent = pet;
+            $('.me-photo figcaption').textContent = `${MAN}, waiting 🖤`;
+            $('#pleaseModal .sub').textContent = `This little one saved you a heart. Please don't leave ${MAN} hanging.`;
+            $('#planModal .sub').textContent = `Pick whatever feels right, ${pet}. I'll make it happen.`;
+            $('#ticketModal .sub').textContent = `Keep this, ${pet}. I'll be the one smiling at the door.`;
+            if (!PAGE.photo_url) {
+                $('.me-photo').remove();
+                $('.me-card').classList.add('no-photo');
+            }
+            document.title = PAGE.headline + ' 🌅';
+            $('.me-photo img')?.setAttribute('alt', NAME);
+
+            // Small footer: make your own, and report a page that shouldn't be here
+            $('main').insertAdjacentHTML('beforeend', `<p class="page-foot"><a href="${ROOT}create.html">Make your own</a>${PREVIEW ? '' : '<button type="button" id="reportBtn">Report this page</button>'}</p>`);
+            document.body.insertAdjacentHTML('beforeend', `
+                <div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+                    <form class="panel" id="reportForm">
+                        <button class="close-x" type="button" data-close aria-label="Close">✕</button>
+                        <h2 id="reportTitle">Report this page</h2>
+                        <p class="sub">Tell us what's wrong. We'll take a look and hide it if it breaks the rules.</p>
+                        <textarea class="field" id="reportReason" maxlength="500" required placeholder="What's wrong with it?" style="margin-top:14px"></textarea>
+                        <button class="btn btn-sun submit" type="submit">Send report</button>
+                        <p class="form-error" id="reportStatus" aria-live="polite"></p>
+                    </form>
+                </div>`);
+            document.documentElement.classList.remove('custom-loading');
+        }
 
         /* ================= Sky ================= */
         const sky = (() => {
@@ -812,15 +966,18 @@
         });
 
         /* ================= Music ================= */
-        // The song starts as soon as the page opens and loops forever. Browsers won't play sound
-        // before the first tap, so if it's blocked it starts silently and turns the sound on at her first tap.
+        // The song starts with sound as soon as the page opens and loops forever. Most browsers block sound until
+        // the first tap; only then does it play silently and turn the sound on at her first tap (or the speaker icon).
         const musicBtn = $('#musicBtn');
         const VOLUME = 35;
         let player, playerReady = false, userMuted = false, heard = false;
 
-        const ytTag = document.createElement('script');
-        ytTag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(ytTag);
+        // The builder's live preview reloads on every keystroke, so it stays quiet
+        if (!PREVIEW) {
+            const ytTag = document.createElement('script');
+            ytTag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(ytTag);
+        }
 
         window.onYouTubeIframeAPIReady = () => {
             player = new YT.Player('player', {
@@ -829,13 +986,26 @@
                 events: {
                     onReady: e => {
                         playerReady = true;
+                        // While the welcome is up, wait: tapping "Open it" starts the song with sound, from the top
+                        if (welcoming) return;
+                        e.target.unMute();
                         e.target.setVolume(VOLUME);
                         e.target.playVideo();
-                        // If the browser refused to play with sound, start muted and wait for a tap
-                        setTimeout(() => {
-                            if (player.getPlayerState() !== YT.PlayerState.PLAYING) { player.mute(); player.playVideo(); }
+                        // Give it time to load and start with sound. Only if the browser refuses (it never starts)
+                        // do we play it muted and wait for a tap. It used to mute a song that was just still loading.
+                        const t0 = performance.now();
+                        const check = () => {
+                            const state = player.getPlayerState(), waited = performance.now() - t0;
+                            if (state === YT.PlayerState.PLAYING) {
+                                if (!player.isMuted()) gotSound();
+                                return updateMusicBtn();
+                            }
+                            if (waited < 2500 || (state === YT.PlayerState.BUFFERING && waited < 8000)) return void setTimeout(check, 250);
+                            player.mute();
+                            player.playVideo();
                             updateMusicBtn();
-                        }, 1200);
+                        };
+                        setTimeout(check, 250);
                     },
                     onStateChange: e => {
                         if (e.data === YT.PlayerState.ENDED) player.playVideo();
@@ -850,7 +1020,6 @@
             player.unMute();
             player.setVolume(VOLUME);
             player.playVideo();
-            heard = true;
             setTimeout(updateMusicBtn, 150);
         }
 
@@ -870,13 +1039,23 @@
             if (!userMuted) soundOn();
         }
 
-        // Her first tap or key press anywhere turns the sound on (unless it's the mute button itself)
+        // If sound was blocked, her first tap or key press anywhere turns it on (unless it's the mute button itself).
+        // Phones only allow sound from some of a tap's events (pointerup/touchend/click), so listen to all of them
+        // and stop once the song is actually audible.
+        const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
+        function gotSound() {
+            if (heard) return;
+            heard = true;
+            GESTURES.forEach(t => removeEventListener(t, firstGesture, true));
+        }
         const firstGesture = e => {
             if (e.target.closest && e.target.closest('#musicBtn')) return;
-            if (!heard && !userMuted) soundOn();
-            if (heard) ['pointerdown', 'keydown'].forEach(t => removeEventListener(t, firstGesture, true));
+            if (heard || userMuted || !playerReady || welcoming) return;
+            if (audible()) return gotSound();
+            soundOn();
+            setTimeout(() => { if (audible()) gotSound(); }, 400);
         };
-        ['pointerdown', 'keydown'].forEach(t => addEventListener(t, firstGesture, true));
+        GESTURES.forEach(t => addEventListener(t, firstGesture, true));
 
         musicBtn.addEventListener('click', () => {
             if (audible()) {
@@ -887,6 +1066,17 @@
                 soundOn();
             }
             updateMusicBtn();
+        });
+
+        /* ================= Fullscreen: press F (again to leave) ================= */
+        addEventListener('keydown', e => {
+            if ((e.key !== 'f' && e.key !== 'F') || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+            if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+            const doc = document, el = doc.documentElement;
+            const req = (doc.fullscreenElement || doc.webkitFullscreenElement)
+                ? (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc)
+                : (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+            req?.catch?.(() => {});   // not allowed (e.g. inside the builder's preview): ignore
         });
 
         /* ================= Modals ================= */
@@ -924,6 +1114,28 @@
                 else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
             }
         });
+
+        if (PAGE && !PREVIEW) {
+            $('#reportBtn').addEventListener('click', () => openModal('reportModal'));
+            $('#reportForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const reason = $('#reportReason').value.trim(), status = $('#reportStatus');
+                if (!reason) return void (status.textContent = 'Tell us what\'s wrong first.');
+                status.textContent = 'Sending…';
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
+                        method: 'POST',
+                        headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                        body: JSON.stringify({ page_id: PAGE.id, reason })
+                    });
+                    if (!res.ok) throw new Error(res.status);
+                    status.textContent = 'Thanks. We\'ll take a look.';
+                    setTimeout(() => closeModal($('#reportModal')), 1400);
+                } catch {
+                    status.textContent = 'Couldn\'t send that. Please try again.';
+                }
+            });
+        }
 
         /* ================= The No button that doesn't want to be clicked ================= */
         const yesBtn = $('#yesBtn'), noBtn = $('#noBtn'), noTalk = $('#noTalk');
@@ -984,7 +1196,7 @@
 
         // Mouse: jump away before the cursor gets there
         document.addEventListener('pointermove', e => {
-            if (e.pointerType !== 'mouse' || saidYes || document.querySelector('.modal.open')) return;
+            if (e.pointerType !== 'mouse' || saidYes || welcoming || document.querySelector('.modal.open')) return;
             const r = noBtn.getBoundingClientRect();
             const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
             if (d < Math.max(r.width, r.height) / 2 + 45) dodge(e.clientX, e.clientY);
@@ -1099,12 +1311,17 @@
                 otherTime.classList.toggle('hidden', e.target.value !== 'other');
                 if (e.target.value === 'other') otherTime.focus();
             }
-            if (e.target.name === 'plan') cat.react(pick({
+            if (e.target.name === 'plan') cat.react(pick((PAGE ? {
+                'Coffee ☕': [`coffee! ${NAME} knows the cutest café ☕`, 'cozy choice 🤎'],
+                'Dinner 🍝': [`dinner! ${NAME} said you can pick dessert 🍰`, 'ooh fancy 🍝'],
+                'A movie 🎬': [`${NAME} will share the popcorn. probably. 🍿`, `you pick the movie, ${NAME} cries at the end`],
+                'Surprise me ✨': [`ooh ${NAME} LOVES surprises ✨`, 'brave. i like you.']
+            } : {
                 'Coffee ☕': ['coffee! he knows the cutest café ☕', 'cozy choice 🤎'],
                 'Dinner 🍝': ['dinner! he said he\'d let you pick dessert 🍰', 'ooh fancy 🍝'],
                 'A movie 🎬': ['he\'ll share the popcorn. probably. 🍿', 'you pick the movie, he cries at the end'],
                 'Surprise me ✨': ['ooh he LOVES surprises ✨', 'brave. i like you.']
-            }[e.target.value]), 3200);
+            })[e.target.value]), 3200);
             refreshSubmit();
         });
         form.addEventListener('input', refreshSubmit);
@@ -1137,8 +1354,8 @@
 
             openModal('ticketModal');
             celebrate();
-            cat.react(pick(['it\'s official!! 💕', 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
-            sendToMark();
+            cat.react(pick(['it\'s official!! 💕', PAGE ? `${NAME}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
+            PAGE ? saveAnswer() : sendToMark();
         });
 
         /* ================= Sending + calendar ================= */
@@ -1169,6 +1386,31 @@
             }
         }
 
+        // Builder pages save the answer in Supabase; the creator sees it on their dashboard
+        async function saveAnswer() {
+            const v = lastDate;
+            sendStatus.className = 'send-status';
+            if (PREVIEW) return void (sendStatus.textContent = 'This is a preview, so nothing was sent.');
+            sendStatus.textContent = `Sending to ${NAME}…`;
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/answers`, {
+                    method: 'POST',
+                    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                    body: JSON.stringify({
+                        page_id: PAGE.id, day: v.day, time: v.time, starts_at: v.start.toISOString(), plan: v.plan,
+                        email: v.email, note: v.note || null, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+                    })
+                });
+                if (!res.ok) throw new Error(res.status);
+                sendStatus.className = 'send-status ok';
+                sendStatus.textContent = `✓ Sent to ${NAME}. They're probably screaming right now.`;
+            } catch {
+                sendStatus.className = 'send-status err';
+                sendStatus.innerHTML = `Couldn't reach ${NAME}. <button type="button">Try again</button>`;
+                sendStatus.querySelector('button').addEventListener('click', saveAnswer);
+            }
+        }
+
         const pad = n => String(n).padStart(2, '0');
         const localStamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
         const utcStamp = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -1178,9 +1420,9 @@
                 action: 'TEMPLATE',
                 text: `Our Date 💕 (${v.plan})`,
                 dates: `${localStamp(v.start)}/${localStamp(v.end)}`,
-                details: v.note ? `A special date!\n\n“${v.note}”` : 'A special date!',
-                add: MARK_EMAIL
+                details: v.note ? `A special date!\n\n“${v.note}”` : 'A special date!'
             });
+            if (MARK_EMAIL) params.set('add', MARK_EMAIL);
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             if (tz) params.set('ctz', tz);
             return 'https://calendar.google.com/calendar/render?' + params;
@@ -1222,7 +1464,7 @@
         counters.forEach(c => io.observe(c));
 
         /* ================= The pixel cat ================= */
-        const CAT_LINES = [
+        const MARK_CAT_LINES = [
             'psst… he\'s still crazy about you 💕', 'you look extra pretty today', 'just say yes 🥺',
             'he still practised this for a whole week', "i'd share my fish with you. that's love.",
             'meow means yes, right?', 'he wore his best coat for you 🖤', "he's been smiling at your photos all day",
@@ -1231,10 +1473,20 @@
             "i'm just a cat but i ship it", 'he talks about you. a lot. i would know.', 'hopeless romantic. certified.', 'he misses you even when you\'re in the next room',
             'did you see that shooting star? make a wish 🌠', 'he knows your coffee order by heart ☕'
         ];
+        const n = NAME;
+        const OWN_LINES = PAGE && Array.isArray(PAGE.cat_lines) ? PAGE.cat_lines.filter(l => typeof l === 'string' && l.trim()) : [];
+        const CAT_LINES = !PAGE ? MARK_CAT_LINES : OWN_LINES.length ? OWN_LINES : [
+            `psst… ${n}'s still crazy about you 💕`, 'you look extra pretty today', 'just say yes 🥺',
+            `${n} practised this for a whole week`, "i'd share my fish with you. that's love.", 'meow means yes, right?',
+            `${n} has been smiling at your photos all day`, `i've heard ${n}'s playlist. it's all love songs.`,
+            `10/10 ${ROLE}. would recommend.`, 'you two = purrfect', `don't tell ${n} i told you… they still get nervous around you`,
+            'you make the stars shine brighter ✨', "i'm just a cat but i ship it", `${n} talks about you. a lot. i would know.`,
+            'hopeless romantic. certified.', 'did you see that shooting star? make a wish 🌠', `${n} knows your coffee order by heart ☕`
+        ];
         const CAT_NO_LINES = ['hehe, it\'s scared of you', 'that button has trust issues', 'try the pink one 👉', 'wrong one, cutie'];
-        const CAT_YES_LINES = ['YAYYY I KNEW IT 💕', 'he\'s going to be SO happy', 'best. decision. ever. 🎉'];
+        const CAT_YES_LINES = ['YAYYY I KNEW IT 💕', PAGE ? `${n}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever. 🎉'];
         const CAT_AFTER_LINES = [
-            'can i come too? no? okay 🥲', 'wear something comfy, you\'ll laugh a lot', 'he\'s already planning the next one',
+            'can i come too? no? okay 🥲', 'wear something comfy, you\'ll laugh a lot', PAGE ? `${n}'s already planning the next one` : 'he\'s already planning the next one',
             'pick dessert. trust me 🍰', 'you two are still so cute. i said what i said.', 'don\'t forget to save the date 📅'
         ];
 
@@ -1269,14 +1521,49 @@
                 '....kkkkwwk..kwwk...', '........kkk..kkk....'
             ][i]);
 
-            function draw(name) {
-                g.clearRect(0, 0, 20, 14);
-                SPRITES[name].forEach((row, y) => {
+            // Welcome-screen moves, drawn as small edits of the sitting cat: [row, column, new pixels]
+            const patch = (rows, ...edits) => {
+                const out = [...rows];
+                for (const [y, x, px] of edits) out[y] = out[y].slice(0, x) + px + out[y].slice(x + px.length);
+                return out;
+            };
+            const pawUp = rows => patch(rows, [12, 11, 'kkkkkk'], [13, 13, '...']);   // right front paw off the ground
+            SPRITES.wave1 = patch(pawUp(SPRITES.sit), [2, 17, 'kkk'], [3, 17, 'wwk'], [4, 17, 'wpk'], [5, 17, 'kok'], [6, 16, 'kok'], [7, 16, 'ok']);
+            SPRITES.wave2 = patch(pawUp(SPRITES.sit), [3, 17, 'kkk'], [4, 17, 'wwk'], [5, 17, 'wpk'], [6, 16, 'kok'], [7, 16, 'ok']);
+            SPRITES.lick1 = patch(pawUp(SPRITES.blink), [5, 12, 'pkwk'], [6, 12, 'kwwk'], [7, 12, 'kwwk']);   // tongue out
+            SPRITES.lick2 = patch(pawUp(SPRITES.blink), [6, 13, 'kwk'], [7, 12, 'kwwk'], [8, 12, 'kwwk']);
+            // The tail (left 8 columns) wiggles on its own, whatever the head and paws are doing
+            const withTail = (tail, body) => SPRITES[body].map((row, y) => SPRITES[tail][y].slice(0, 8) + row.slice(8));
+
+            function drawRows(ctx, rows) {
+                ctx.clearRect(0, 0, 20, 14);
+                rows.forEach((row, y) => {
                     for (let x = 0; x < row.length; x++) {
                         const c = PAL[row[x]];
-                        if (c) { g.fillStyle = c; g.fillRect(x, y, 1, 1); }
+                        if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
                     }
                 });
+            }
+            const draw = name => drawRows(g, SPRITES[name]);
+
+            // The big cat on the welcome screen: waves, blinks, licks its paw, tail always wiggling
+            function welcomeShow(canvas, says) {
+                const ctx = canvas.getContext('2d');
+                const LINES = { wave: 'hi!! 👋', lick: '*licks paw* 👅', idle: 'mrrp? 🐾' };
+                let f = 0, shown = '';
+                const frame = () => {
+                    const t = f % 60;
+                    const act = t < 20 ? 'wave' : t >= 28 && t < 48 ? 'lick' : 'idle';
+                    const body = act === 'wave' ? (Math.floor(t / 2) % 2 ? 'wave2' : 'wave1')
+                        : act === 'lick' ? (Math.floor(t / 3) % 2 ? 'lick2' : 'lick1')
+                        : (t === 24 || t === 25 || t === 54) ? 'blink' : 'sit';
+                    drawRows(ctx, withTail(Math.floor(f / 2) % 2 ? 'tail' : 'sit', body));
+                    if (LINES[act] !== shown) says.textContent = shown = LINES[act];
+                    f++;
+                };
+                frame();
+                const timer = reduceMotion ? null : setInterval(frame, 160);
+                return { stop: () => clearInterval(timer) };
             }
 
             let x = rand(20, innerWidth - 100), y = innerHeight - 90;
@@ -1290,8 +1577,6 @@
                 target = { x: rand(8, innerWidth - w - 8), y: rand(90, innerHeight - h - 12) };
                 speed = Math.random() < 0.12 ? rand(150, 190) : rand(45, 75);
                 state = 'walk';
-                // Sometimes wander behind the words, sometimes in front of them
-                if (Math.random() < 0.35) el.classList.toggle('front');
             }
 
             function talk(text, ms = 3600) {
@@ -1332,11 +1617,17 @@
                 sit(ms + 400, line);
             }
 
-            el.addEventListener('click', () => {
+            function poke() {
                 sky.burst(x + size().w / 2, y + 6, 14);
                 react(nextLine());
-            });
-            el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+            }
+
+            // Taps pass through the cat, so check whether a tap landed on it
+            addEventListener('click', e => {
+                const r = el.getBoundingClientRect();
+                if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) poke();
+            }, true);
+            el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); poke(); } });
 
             let last = performance.now();
             function tick(now) {
@@ -1385,10 +1676,40 @@
                 state = 'sit'; until = Infinity;
                 setInterval(() => talk(nextLine()), 9000);
             }
-            setTimeout(() => talk('hi! 👋 i\'m his wingcat', 3500), 2600);
+            const hello = (ms = 2600) => setTimeout(() => talk(PAGE ? `hi! 👋 i'm ${n}'s wingcat` : 'hi! 👋 i\'m his wingcat', 3500), ms);
+            // After the welcome, the little cat starts at the bottom centre, clear of the question and the buttons
+            function arrive() {
+                const { w, h } = size();
+                if (!reduceMotion) { x = innerWidth / 2 - w / 2; y = innerHeight - h - 24; sit(4200); }
+                hello(900);
+            }
+            if (!welcoming) hello();
             requestAnimationFrame(tick);
-            return { react };
+            return { react, arrive, welcomeShow };
         })();
+
+        /* ================= Welcome ================= */
+        // Browsers only allow sound after a tap, so the page waits behind the welcome until "Open it".
+        const welcomeEl = $('#welcome');
+        if (!welcoming) {
+            welcomeEl.remove();
+            document.body.classList.remove('welcoming');
+        } else {
+            const blurred = document.querySelectorAll('.nav, main');
+            blurred.forEach(el => { el.inert = true; });
+            const show = cat.welcomeShow(welcomeEl.querySelector('canvas'), $('#welcomeSays'));
+            $('#welcomeBtn').addEventListener('click', () => {
+                welcoming = false;
+                show.stop();
+                playMusic();                 // inside the tap, so the song starts with sound
+                document.body.classList.remove('welcoming');
+                blurred.forEach(el => { el.inert = false; });
+                welcomeEl.classList.add('gone');
+                cat.arrive();
+                setTimeout(() => welcomeEl.remove(), 800);
+            });
+            setTimeout(() => $('#welcomeBtn').focus({ preventScroll: true }), 60);
+        }
     })();
     </script>
 </body>
