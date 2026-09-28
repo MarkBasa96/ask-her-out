@@ -1,6 +1,6 @@
 # Plan: a public "make your own date page" version (Supabase + Vercel)
 
-Status: **not built yet.** This is the plan agreed on 2026-09-28.
+Status: **built on 2026-09-28** (see [`2026-09-28-builder.md`](2026-09-28-builder.md) for what was built, what differs from this plan, and Mark's remaining to-dos). This is the original plan, kept for reference.
 
 ## Goal
 
@@ -94,9 +94,16 @@ create policy "owners upload photos" on storage.objects for insert to authentica
 6. **Optional:** add a Supabase Edge Function plus a database webhook on `answers` insert that emails the page owner (e.g. via Resend).
 7. **Test:** create a page with a second account, open its link in a private window, answer, and check the answer shows only on the owner's dashboard.
 
-## Open questions for Mark
+## Open questions for Mark (answered 2026-09-28)
 
-- Custom domain, or the default `*.vercel.app` one?
-- Should Mark's own page move to Vercel too, or stay on GitHub Pages?
-- Email notifications for creators (needs an email provider such as Resend), or dashboard-only to start?
-- Any limits, such as the number of pages per account, or moderation of uploaded photos?
+- Custom domain, or the default `*.vercel.app` one? → **Default.** It's `ask-her-out-orpin-psi.vercel.app`, because `ask-her-out.vercel.app` was taken.
+- Should Mark's own page move to Vercel too, or stay on GitHub Pages? → **Stays on GitHub Pages.** On Vercel, `/` is the builder.
+- Email notifications for creators, or dashboard-only to start? → **Dashboard only** for now.
+- Any limits? → **All of them:** 5 pages per account; JPG/PNG/WebP photos up to 2 MB; 10 answers per page per hour; a report link on every page, and an admin (Mark) who can hide pages.
+
+## Differences from this plan
+
+- A **new Supabase project** `ask-her-out` was made (Mark's other project, `gastos`, is untouched).
+- `pages` gained `pet_name`, `role`, `hidden` and `updated_at`; `answers` gained `starts_at` and `seen_at`; there are new `reports` and `admins` tables. Visitors can't read `owner_id`.
+- `vercel.json` sends `/` to `create.html` (not to Mark's page) and adds `/p/Pics/:file` so images load under `/p/`.
+- Shared `site.css` and `site.js` for the builder and dashboard.

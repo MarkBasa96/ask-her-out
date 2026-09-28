@@ -24,8 +24,9 @@ button, input, textarea { font: inherit; color: inherit; }
 .nav { position: sticky; top: 14px; margin: 14px auto 0; z-index: 30; width: min(1100px, calc(100% - 24px)); height: 54px; padding: 0 8px 0 18px;
     display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius); border: 1px solid var(--line);
     background: rgba(18,16,24,.55); backdrop-filter: blur(14px) saturate(140%); }
-.logo { font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: .03em; display: flex; gap: 3px; align-items: baseline; }
-.logo i { width: 7px; height: 7px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 10px #ff7a2f; }
+.logo { font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: .03em; display: flex; gap: 3px; align-items: center; }
+.logo i { align-self: flex-start; margin-top: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 10px #ff7a2f; }
+.logo-mark { width: 26px; height: 26px; border-radius: 7px; margin-right: 6px; align-self: center; box-shadow: 0 0 14px -4px rgba(255,90,95,.8); }
 .nav-links { display: flex; gap: 22px; font-size: .88rem; color: #bdb8c4; }
 .nav-links .on { color: #fff; }
 .nav-right { display: flex; gap: 8px; align-items: center; font-size: .82rem; color: var(--muted); }
