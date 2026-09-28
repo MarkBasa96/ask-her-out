@@ -1,17 +1,55 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": false,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/create.html",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "destination": "/create.html",
+      "permanent": false
+    },
+    {
+      "source": "/ask-her-out.html",
+      "missing": [
+        {
+          "type": "query",
+          "key": "p"
+        },
+        {
+          "type": "query",
+          "key": "preview"
+        }
+      ],
+      "destination": "/create.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/p/Pics/:file", "destination": "/Pics/:file" },
-    { "source": "/p/:slug", "destination": "/ask-her-out.html" },
-    { "source": "/", "destination": "/create.html" }
+    {
+      "source": "/p/Pics/:file",
+      "destination": "/Pics/:file"
+    },
+    {
+      "source": "/p/:slug",
+      "destination": "/ask-her-out.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     }
   ]

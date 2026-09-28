@@ -6,7 +6,7 @@ Context for Claude Code when working in this repo. Read this first, then `docs/`
 
 Two things share this repo:
 
-1. **Mark's page.** A single-page website Mark (Joemark, GitHub `MarkBasa96`) sends to his girlfriend to ask her on a date. It lives at https://markbasa96.github.io/ask-her-out/ (GitHub Pages, served from `main`). `index.html` only redirects to `ask-her-out.html`. **It must keep working exactly as it is.**
+1. **Mark's page.** A single-page website Mark (Joemark, GitHub `MarkBasa96`) sends to his girlfriend to ask her on a date. It lives at https://markbasa96.github.io/ask-her-out/ (GitHub Pages, served from `main`). `index.html` only redirects to `ask-her-out.html`. **It must keep working exactly as it is.** It's **private to Mark**: never link it from the README or any public-facing page (screenshots are fine), and it isn't served on Vercel.
 2. **The public builder** (built 2026-09-28). Anyone signs in with a magic link, fills in a form and gets `https://ask-her-out-orpin-psi.vercel.app/p/<slug>`. That link is the same `ask-her-out.html`, loading their words from Supabase. Hosted on Vercel from `main`; data in Supabase. See `docs/2026-09-28-builder.md`.
 
 She is already his girlfriend. All wording is written for someone **already in a relationship**, e.g. "Can I steal you for a date, love?" and never "will you go out with me". Keep it that way.
@@ -18,9 +18,9 @@ She is already his girlfriend. All wording is written for someone **already in a
 | `ask-her-out.html` | The date page: HTML, CSS and JS in one file, no build step. Mark's page by default; a builder page with `/p/<slug>`, `?p=<slug>` or `?preview=1` |
 | `index.html` | Redirect to `ask-her-out.html`, plus link-preview (Open Graph) tags |
 | `create.html` | Builder: magic-link sign-in, form, live preview iframe, photo shrink + upload, slug check, publish/edit (`?edit=<id>`) |
-| `dashboard.html` | A creator's pages and answers (tickets, Google Calendar/.ics), marks answers seen, delete; **Admin** tab (reports, hide/unhide) for admins |
+| `dashboard.html` | A creator's pages and answers (tickets, Google Calendar/.ics), marks answers seen, delete; **Admin** tab (reports, hide/unhide) for admins. The Admin tab is Mark's only: don't document it in the README |
 | `site.css`, `site.js` | Shared by `create.html`/`dashboard.html`: tokens and glass styles; Supabase client, sign-in card, nav user menu, `pageLink()`, `friendlyError()` |
-| `vercel.json` | Rewrites: `/p/Pics/:file` → `/Pics/:file`, `/p/:slug` → `/ask-her-out.html`, `/` → `/create.html` |
+| `vercel.json` | Redirects (applied before files): `/` and `/index.html` → `/create.html`, and `/ask-her-out.html` without `?p=`/`?preview=` → `/create.html`, so Mark's page isn't on Vercel. Rewrites: `/p/Pics/:file` → `/Pics/:file`, `/p/:slug` → `/ask-her-out.html` |
 | `supabase/migrations/` | `0001_init.sql` (schema, RLS, triggers, `photos` bucket) and `0002_seed_admin.sql` (Mark's email as admin). Already applied |
 | `Pics/icon.svg` | The logo: a heart rising out of the sunset arc. Favicon and top-bar mark on every page (`icon-32.png`, `apple-touch-icon.png` are PNG fallbacks) |
 | `Pics/mark.jpg` | Mark's photo (black coat) on the "hopeless romantic" card |
@@ -62,6 +62,7 @@ The script is one IIFE, in this order:
 - **Pointer events:** `main` has `pointer-events: none` with `main > * { pointer-events: auto }` so the cat can be tapped in the empty areas when it's behind the text.
 - **Mark's page must not change:** don't add wrapper `<span>`s inside `.btn` or `.badge` (they're flex with `gap`, so spans add visible space). Custom wording for builder pages is set in `applyPage()` instead. After touching `ask-her-out.html`, compare it against the previous commit with no slug (text, the ticket, the Google Calendar link, and a screenshot).
 - **Pronouns on builder pages:** use the creator's name, not "he"/"they" (verb agreement). Mark's lines keep "he".
+- **Vercel serves real files before rewrites.** A rewrite of `/` never ran because `index.html` exists (it forwards to Mark's page for GitHub Pages), so the builder link opened Mark's page. `/` → `/create.html` is a **redirect**, which Vercel applies before files. A rewrite only works for paths with no file behind them, like `/p/<slug>`. Test servers must do the same: files first, then rewrites.
 - **Relative paths under `/p/`:** `/p/<slug>` is one folder deep, so `Pics/...` is rewritten in `vercel.json`; links built in JS use `ROOT`.
 - **Supabase columns:** `anon` has column-level `select` on `pages` (no `owner_id`), so select named columns, never `*`, from the date page.
 
@@ -72,7 +73,7 @@ The script is one IIFE, in this order:
 - Schema changes: add a new numbered file in `supabase/migrations/` **and** apply it with the Supabase connector (`apply_migration`), then run `get_advisors`. Test RLS with a SQL block that switches roles and ends with `raise exception` so it rolls back (see the builder doc).
 - **Vercel project `ask-her-out`** (`prj_DuFU9wm2ymIfNhoNI0GusaaBVVPv`) in team "Jarvis" (`team_2ZBlZnJJuxrIz5WWQXfH3pxt`), linked to this repo. Production = `main` at `ask-her-out-orpin-psi.vercel.app`; every branch push gets a protected preview.
 - **Don't touch `gastos`.** Mark has a Supabase project and a Vercel project with that name for a different app.
-- Mark still has to do the manual steps listed in `docs/2026-09-28-builder.md` (Auth URL configuration, custom SMTP, signing in once for the admin tab).
+- Mark has done the dashboard-only setup (Auth URL configuration, custom SMTP via Gmail app password, email rate limit 30/h, signed in as admin). **Public vs private:** the public (README, Vercel) gets only the builder and dashboard. Mark's own page and the Admin tab are his; his admin notes are kept outside the repo.
 
 ## Conventions
 
@@ -85,7 +86,7 @@ The script is one IIFE, in this order:
 
 There's no test suite. Check changes in a real browser at phone (390×844) and laptop (1280×800) sizes. Go through the whole flow: No dodges, Yes, the planner, submit, then the ticket. Confirm the ticket time and the Google Calendar `dates=` match what was picked, with `ctz` set. Mock Formspree when testing so it doesn't email Mark.
 
-For the builder, test both `/p/<slug>` (answers go to Supabase, not Formspree) and Mark's page with no slug (unchanged). Serve the repo with the `vercel.json` rewrites (a tiny Node server is enough), because `/p/...` paths only work that way. The cloud sandbox can't reach Supabase, jsDelivr or YouTube, so mock them with Playwright `page.route`: seed a fake session in `localStorage['sb-xrjkwjcftuthdgdebxwg-auth-token']` for the builder and dashboard, and use a fake `YT.Player` for the music (blocked until a real gesture). The `.svg` content type matters for the logo. Use the Supabase connector for real database checks.
+For the builder, test both `/p/<slug>` (answers go to Supabase, not Formspree) and Mark's page with no slug (unchanged). Serve the repo the way Vercel does (a tiny Node server is enough): **redirects first, then real files, then rewrites**, because `/p/...` paths only work that way and because a rewrite never beats a real file. Test Mark's page on a plain static server (like GitHub Pages), since Vercel redirects it to the builder. The cloud sandbox can't reach Supabase, jsDelivr or YouTube, so mock them with Playwright `page.route`: seed a fake session in `localStorage['sb-xrjkwjcftuthdgdebxwg-auth-token']` for the builder and dashboard, and use a fake `YT.Player` for the music (blocked until a real gesture). The `.svg` content type matters for the logo. Use the Supabase connector for real database checks.
 
 ## Picking this up on another machine
 

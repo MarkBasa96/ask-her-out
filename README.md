@@ -4,15 +4,12 @@
 
 A page that asks your love on a date. The No button doesn't want to be clicked.
 
-It started as one HTML file I made for my girlfriend. Now there's also a **free builder**: anyone can sign in, fill in a form and get their own link to send.
+It started as a page I made for my girlfriend (that one stays just between us; the screenshots below show what it looks like). Now there's a **free builder**, so anyone can sign in, fill in a form and get their own link to send.
 
 | | Link |
 |---|---|
-| 💌 **My page** (the original, for my girlfriend) | https://markbasa96.github.io/ask-her-out/ |
 | 🌅 **Make your own** (the builder) | https://ask-her-out-orpin-psi.vercel.app |
 | 📋 **Your pages and answers** (the dashboard) | https://ask-her-out-orpin-psi.vercel.app/dashboard.html |
-
-> The builder goes live at the Vercel link once this version is merged into `main`. Until then that link shows the older version.
 
 ![The date page: a night sky, a glowing sunset, "Can I steal you for a date, love?" with Yes and No buttons](Pics/og.jpg)
 
@@ -152,7 +149,7 @@ At the bottom there's a small **Make your own** link and a **Report this page** 
 - 5 pages per account.
 - Photos: JPG, PNG or WebP, up to 2 MB after shrinking (big phone photos are fine, they're shrunk automatically).
 - Each page accepts up to 10 answers per hour, to stop spam.
-- Pages that are reported can be hidden by the admin.
+- Pages that are reported are reviewed and can be taken down.
 
 ---
 
@@ -197,16 +194,16 @@ No frameworks and no build step. It's plain HTML, CSS and JavaScript.
 | `ask-her-out.html` | The date page: sky, cat, No button, planner, ticket, music. With no slug it's my page (`CONFIG`, Formspree). With `/p/<slug>` or `?p=<slug>` it loads that page from Supabase |
 | `index.html` | Redirects to `ask-her-out.html` on GitHub Pages, with link-preview tags |
 | `create.html` | The builder: sign in, form, live preview, photo upload, publish and edit |
-| `dashboard.html` | A creator's pages and answers, plus the Admin tab (reports, hide/unhide) |
+| `dashboard.html` | A creator's pages and answers, plus moderation of reported pages for the site owner |
 | `site.css`, `site.js` | Shared styles and code for the builder and dashboard (Supabase client, sign-in, helpers) |
-| `vercel.json` | Vercel rewrites: `/p/<slug>` → the date page, `/` → the builder |
+| `vercel.json` | Vercel routing: `/` redirects to the builder, `/p/<slug>` shows the date page |
 | `supabase/migrations/` | The database: tables, Row Level Security, limits, photo storage |
 | `Pics/` | My photo, the cat stickers, the link-preview image and the logo (`icon.svg`, plus `icon-32.png` and `apple-touch-icon.png` for older browsers and iPhone home screens) |
 | `docs/` | Build notes and screenshots |
 
-- **Hosting:** my page is on GitHub Pages. The builder is on Vercel and deploys automatically on every push to `main`.
+- **Hosting:** the builder is on Vercel and deploys automatically on every push to `main`.
 - **Data:** [Supabase](https://supabase.com) handles magic-link sign-in, a Postgres database (`pages`, `answers`, `reports`, `admins`) and a `photos` storage bucket.
-- **Security:** every table uses Row Level Security. Anyone can *read* a page (that's how links work) and *answer* it. Only the page's owner can change it or read its answers. Only the admin can hide pages or read reports. The 5-page and 10-answers-per-hour limits are enforced in the database, not just the page.
+- **Security:** every table uses Row Level Security. Anyone can *read* a page (that's how links work) and *answer* it. Only the page's owner can change it or read its answers. Only the site owner can hide pages or read reports. The 5-page and 10-answers-per-hour limits are enforced in the database, not just the page.
 - **The sky** is drawn on a canvas. **The cat** is a 20×14 pixel sprite drawn in code. **The music** uses the YouTube IFrame API.
 - It works on phones, respects "reduce motion" (the sky and cat hold still), and the pop-ups work with a keyboard. **F** toggles fullscreen.
 
