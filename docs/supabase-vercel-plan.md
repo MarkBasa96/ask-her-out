@@ -105,5 +105,5 @@ create policy "owners upload photos" on storage.objects for insert to authentica
 
 - A **new Supabase project** `ask-her-out` was made (Mark's other project, `gastos`, is untouched).
 - `pages` gained `pet_name`, `role`, `hidden` and `updated_at`; `answers` gained `starts_at` and `seen_at`; there are new `reports` and `admins` tables. Visitors can't read `owner_id`.
-- `vercel.json` sends `/` to `create.html` (not to Mark's page) and adds `/p/Pics/:file` so images load under `/p/`.
+- `vercel.json` redirects `/` to `create.html` (not to Mark's page; it has to be a redirect because `index.html` exists) and adds `/p/Pics/:file` so images load under `/p/`.
 - Shared `site.css` and `site.js` for the builder and dashboard.
