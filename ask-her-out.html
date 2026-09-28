@@ -490,12 +490,6 @@
         .day.pick span { width: 64px; }
         .day.pick b { font-size: 1.05rem; line-height: 1.45; }
         input[type="date"].field { color-scheme: dark; margin-top: 9px; }
-        .day-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
-        .pick-date {
-            margin-bottom: 7px; padding: 6px 12px; border-radius: 99px; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-            color: #ffd0b8; border: 1px solid rgba(255, 120, 95, 0.55); background: rgba(255, 90, 95, 0.12); transition: background .2s;
-        }
-        .pick-date:hover { background: rgba(255, 90, 95, 0.22); }
         .chips-wrap { position: relative; }
         .chip-arrow {
             position: absolute; top: 50%; z-index: 2; width: 32px; height: 32px; margin-top: -19px; border-radius: 50%; display: none;
@@ -1397,7 +1391,7 @@
             const label = document.createElement('label');
             label.className = 'choice day pick';
             label.innerHTML = '<input type="radio" name="day" value="other" aria-label="Pick another date"><span><small>Other</small><b>📅</b><em>date</em></span>';
-            daysEl.appendChild(label);
+            daysEl.prepend(label);   // first, so it's in view without scrolling
             const field = document.createElement('input');
             field.className = 'field hidden';
             field.type = 'date';
@@ -1407,23 +1401,7 @@
             field.max = iso(new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()));
             daysEl.after(field);
 
-            // On a computer the day cards can't be swiped, so: a "Pick a date" button that's always in view,
-            // arrows at the ends of the row, and the mouse wheel scrolls it sideways
-            const pickBtn = document.createElement('button');
-            pickBtn.type = 'button';
-            pickBtn.className = 'pick-date';
-            pickBtn.textContent = '📅 Pick a date';
-            pickBtn.addEventListener('click', () => {
-                const radio = label.querySelector('input');
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change', { bubbles: true }));
-                daysEl.scrollTo({ left: daysEl.scrollWidth, behavior: 'smooth' });   // the Other date card is last
-            });
-            const head = document.createElement('div');
-            head.className = 'day-head';
-            $('#dayLabel').before(head);
-            head.append($('#dayLabel'), pickBtn);
-
+            // On a computer the day cards can't be swiped, so: arrows at the ends of the row, and the mouse wheel scrolls it sideways
             const wrap = document.createElement('div');
             wrap.className = 'chips-wrap';
             daysEl.before(wrap);

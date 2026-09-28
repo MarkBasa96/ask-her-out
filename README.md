@@ -69,7 +69,7 @@ Then a question sits under a moving night sky: "Can I steal you for a date, love
 
 **Press F for fullscreen** (on a computer), and F again to leave. It's ignored while typing in a text box.
 
-**Yes opens the planner.** Confetti, then a frosted-glass pop-up: tappable day cards for the next three weeks, what you're doing (coffee, dinner, a movie or a surprise), a time (or "Other" for any time), their email and an optional note. The button says what's still missing instead of hiding. On builder pages there's also an **Other date** card and a **📅 Pick a date** button that open a date picker, for any day up to two years out. On a computer, arrows or the mouse wheel scroll through the days.
+**Yes opens the planner.** Confetti, then a frosted-glass pop-up: tappable day cards for the next three weeks, what you're doing (coffee, dinner, a movie or a surprise), a time (or "Other" for any time), their email and an optional note. The button says what's still missing instead of hiding. On builder pages the first card is **Other date**, which opens a date picker for any day up to two years out. On a computer, arrows or the mouse wheel scroll through the days.
 
 **Confirming gives them a ticket.** An "Admit Two" date ticket with the date, time, plan and note, plus **Add to Google Calendar** (with the asker as a guest) and **Save for iPhone / Outlook** (a calendar file). The answer is sent to the asker: by email on my page, or to the dashboard on builder pages.
 
