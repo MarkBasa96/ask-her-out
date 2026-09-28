@@ -18,7 +18,7 @@ She is already his girlfriend. All wording is written for someone **already in a
 | `ask-her-out.html` | The date page: HTML, CSS and JS in one file, no build step. Mark's page by default; a builder page with `/p/<slug>`, `?p=<slug>` or `?preview=1` |
 | `index.html` | Redirect to `ask-her-out.html`, plus link-preview (Open Graph) tags |
 | `create.html` | Builder: magic-link sign-in, form, live preview iframe, photo shrink + upload, slug check, publish/edit (`?edit=<id>`) |
-| `dashboard.html` | A creator's pages and answers (tickets, Google Calendar/.ics), marks answers seen, delete; **Admin** tab (reports, hide/unhide) for admins. The Admin tab is Mark's only: don't document it in the README |
+| `dashboard.html` | A creator's pages and answers (tickets, Google Calendar/.ics), marks answers seen, delete; **Admin** tab for admins: **All pages** (counts, search, every page on the site with Open and Hide/Unhide) and **Reported pages**. Admins can read every page but never other people's answers (RLS). The Admin tab is Mark's only: don't document it in the README |
 | `site.css`, `site.js` | Shared by `create.html`/`dashboard.html`: tokens and glass styles; Supabase client, sign-in card, nav user menu, `pageLink()`, `friendlyError()` |
 | `vercel.json` | Redirects (applied before files): `/` and `/index.html` → `/create.html`, and `/ask-her-out.html` without `?p=`/`?preview=` → `/create.html`, so Mark's page isn't on Vercel. Rewrites: `/p/Pics/:file` → `/Pics/:file`, `/p/:slug` → `/ask-her-out.html` |
 | `supabase/migrations/` | `0001_init.sql` (schema, RLS, triggers, `photos` bucket) and `0002_seed_admin.sql` (Mark's email as admin). Already applied |
