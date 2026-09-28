@@ -37,6 +37,15 @@
         .drop .thumb.has { font-size: 0; }
         .drop div { font-size: .86rem; color: #dcd6e2; min-width: 0; }
         .drop small { display: block; color: var(--muted); font-size: .74rem; margin-top: 3px; }
+        .drop.full { opacity: .5; pointer-events: none; }
+        .pgrid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding-top: 6px; }
+        .pgrid .ph { position: relative; width: 64px; height: 80px; border-radius: 12px; background: rgba(255, 255, 255, .06) center / cover no-repeat; }
+        .pgrid .pick { position: absolute; inset: 0; width: 100%; border-radius: inherit; border: 0; padding: 0; background: none; cursor: pointer; }
+        .pgrid .ph:first-child { box-shadow: 0 0 0 2px #ff8a5f; }
+        .pgrid .ph small { position: absolute; left: 4px; bottom: 4px; padding: 1px 6px; border-radius: 99px; font-size: .58rem; font-weight: 700; background: var(--sun); }
+        .pgrid .x { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; line-height: 1;
+            border: 1px solid rgba(255, 255, 255, .25); background: #1c1922; cursor: pointer; }
+        .pgrid .x:hover { background: #3a2230; }
 
         .slug { display: flex; align-items: center; border-radius: 13px; border: 1px solid var(--line); background: rgba(0, 0, 0, .25); overflow: hidden; transition: border-color .2s, box-shadow .2s; }
         .slug:focus-within { border-color: rgba(255, 120, 95, .8); box-shadow: 0 0 0 4px rgba(255, 90, 95, .15); }
@@ -119,13 +128,13 @@
                 <input class="field" id="fLead" maxlength="160" value="You already have my heart. Now I'd like your calendar.">
 
                 <div class="step"><b>3</b>Your card</div>
-                <span class="label">Your photo <em>(optional)</em></span>
+                <span class="label">Your photos <em>(optional · up to 10, they play as a slideshow)</em></span>
+                <div class="pgrid hidden" id="pgrid"></div>
                 <label class="drop" for="fPhoto">
-                    <span class="thumb" id="thumb">📷</span>
-                    <div><span id="photoName">Add a photo of you</span><small>JPG, PNG or WebP · we shrink it for you · tap to choose</small>
-                        <button type="button" class="link-btn hidden" id="removePhoto">Remove photo</button></div>
+                    <span class="thumb">📷</span>
+                    <div><span id="photoName">Add photos of you</span><small id="photoHint">JPG, PNG or WebP · pick as many as you like · we shrink them for you</small></div>
                 </label>
-                <input class="sr-only" type="file" id="fPhoto" accept="image/jpeg,image/png,image/webp">
+                <input class="sr-only" type="file" id="fPhoto" accept="image/jpeg,image/png,image/webp" multiple>
                 <label class="label" for="fCardTitle">Card title</label>
                 <input class="field" id="fCardTitle" maxlength="90" placeholder="Jamie, still falling for you every day.">
                 <p class="hint">The word right after the first comma glows.</p>
@@ -179,7 +188,9 @@
         const form = $('#form'), fine = $('#fine'), frame = $('#previewFrame');
         const f = id => $('#' + id);
         const editId = new URLSearchParams(location.search).get('edit');
-        let editing = null, photoBlob = null, photoBlobUrl = '', photoPath = null, removeOld = false;
+        const MAX_PHOTOS = 10;
+        // The photos, in order (the first is the cover): { path, url } saved ones and { blob, url } new ones
+        let editing = null, photos = [], oldPaths = [];
         let slugTouched = false, titleTouched = false, slugOk = true;
 
         $('#slugPrefix').textContent = pageLink('').replace(/^https?:\/\//, '');
@@ -205,8 +216,9 @@
                 f('fSlug').value = data.slug;
                 f('fGuest').checked = !!data.calendar_email;
                 f('fCat').value = (data.cat_lines || []).join('\n');
-                photoPath = data.photo_path;
-                showPhoto(photoUrl(photoPath), 'Current photo');
+                oldPaths = data.photo_paths && data.photo_paths.length ? data.photo_paths : data.photo_path ? [data.photo_path] : [];
+                photos = oldPaths.map(path => ({ path, url: photoUrl(path) }));
+                showPhotos();
                 $('#publish').textContent = 'Save changes →';
                 document.title = 'Edit your date page 🌅';
             }
@@ -251,7 +263,8 @@
                 if (!form.isConnected) return;
                 const d = draft();
                 d.sender_name = d.sender_name || 'You';
-                d.photo_url = photoBlobUrl || (removeOld ? '' : photoUrl(photoPath));
+                d.photo_urls = photos.map(p => p.url);
+                d.photo_url = d.photo_urls[0] || '';
                 try { localStorage.setItem('dp-preview', JSON.stringify(d)); } catch {}
                 frame.src = 'ask-her-out.html?preview=' + Date.now();
             }, 500);
@@ -298,13 +311,40 @@
             }, 400);
         }
 
-        // ----- photo: shrink it in the browser (also drops location data from phone photos) -----
-        function showPhoto(url, name) {
-            const t = $('#thumb');
-            t.style.backgroundImage = url ? `url("${url}")` : '';
-            t.classList.toggle('has', !!url);
-            $('#photoName').textContent = url ? name : 'Add a photo of you';
-            $('#removePhoto').classList.toggle('hidden', !url);
+        // ----- photos: shrunk in the browser (also drops location data from phone photos) -----
+        function showPhotos() {
+            const grid = $('#pgrid');
+            grid.innerHTML = '';
+            grid.classList.toggle('hidden', !photos.length);
+            photos.forEach((p, i) => {
+                const ph = document.createElement('div');
+                ph.className = 'ph';
+                ph.style.backgroundImage = `url("${p.url}")`;
+                const pick = document.createElement('button');
+                pick.type = 'button';
+                pick.className = 'pick';
+                pick.title = i ? 'Tap to make this the first photo' : 'First photo';
+                pick.setAttribute('aria-label', i ? `Photo ${i + 1}: make it the first one` : 'Photo 1, the first one');
+                if (!i) { const tag = document.createElement('small'); tag.textContent = 'First'; pick.append(tag); }
+                pick.addEventListener('click', () => { if (i) { photos.unshift(...photos.splice(i, 1)); showPhotos(); updatePreview(); } });
+                const x = document.createElement('button');
+                x.type = 'button';
+                x.className = 'x';
+                x.textContent = '✕';
+                x.setAttribute('aria-label', `Remove photo ${i + 1}`);
+                x.addEventListener('click', () => {
+                    const [gone] = photos.splice(i, 1);
+                    if (gone.blob) URL.revokeObjectURL(gone.url);
+                    showPhotos();
+                    updatePreview();
+                });
+                ph.append(pick, x);
+                grid.append(ph);
+            });
+            const full = photos.length >= MAX_PHOTOS;
+            $('.drop').classList.toggle('full', full);
+            $('#photoName').textContent = full ? `That's ${MAX_PHOTOS} photos, the most a page can have` : photos.length ? `Add more photos (${photos.length} of ${MAX_PHOTOS})` : 'Add photos of you';
+            $('#photoHint').textContent = photos.length > 1 ? 'Tap a photo to make it the first one · ✕ removes it' : 'JPG, PNG or WebP · pick as many as you like · we shrink them for you';
         }
 
         async function shrink(file) {
@@ -322,26 +362,21 @@
         }
 
         f('fPhoto').addEventListener('change', async () => {
-            const file = f('fPhoto').files[0];
-            if (!file) return;
-            if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast('Use a JPG, PNG or WebP photo'); return; }
-            try {
-                photoBlob = await shrink(file);
-                if (photoBlobUrl) URL.revokeObjectURL(photoBlobUrl);
-                photoBlobUrl = URL.createObjectURL(photoBlob);
-                removeOld = !!photoPath;
-                showPhoto(photoBlobUrl, `${file.name} · ${(photoBlob.size / 1024 / 1024).toFixed(1)} MB`);
-                updatePreview();
-            } catch { toast('Couldn\'t read that photo. Try another one.'); }
-        });
-        $('#removePhoto').addEventListener('click', e => {
-            e.preventDefault();
-            photoBlob = null;
-            if (photoBlobUrl) URL.revokeObjectURL(photoBlobUrl);
-            photoBlobUrl = '';
-            removeOld = !!photoPath;
+            const files = [...f('fPhoto').files];
             f('fPhoto').value = '';
-            showPhoto('', '');
+            if (!files.length) return;
+            const room = MAX_PHOTOS - photos.length;
+            if (files.length > room) toast(`A page can have ${MAX_PHOTOS} photos, so only ${room} more fit`);
+            let bad = 0;
+            for (const file of files.slice(0, room)) {
+                if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { bad++; continue; }
+                try {
+                    const blob = await shrink(file);
+                    photos.push({ blob, url: URL.createObjectURL(blob) });
+                } catch { bad++; }
+            }
+            if (bad) toast(bad === 1 ? 'One photo couldn\'t be used. Use JPG, PNG or WebP.' : `${bad} photos couldn't be used. Use JPG, PNG or WebP.`);
+            showPhotos();
             updatePreview();
         });
 
@@ -363,23 +398,31 @@
             btn.disabled = true;
             fine.className = 'fine';
             fine.textContent = 'Publishing…';
-            let uploaded = null;
+            const uploaded = [];
             try {
-                if (photoBlob) {
-                    uploaded = `${user.id}/${crypto.randomUUID()}.jpg`;
-                    const up = await sb.storage.from('photos').upload(uploaded, photoBlob, { contentType: 'image/jpeg', cacheControl: '31536000' });
-                    if (up.error) { uploaded = null; throw up.error; }
+                // Upload the new photos; saved ones keep their path
+                const paths = [];
+                for (const p of photos) {
+                    if (p.path) { paths.push(p.path); continue; }
+                    fine.textContent = `Uploading photo ${uploaded.length + 1} of ${photos.filter(x => !x.path).length}…`;
+                    const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+                    const up = await sb.storage.from('photos').upload(path, p.blob, { contentType: 'image/jpeg', cacheControl: '31536000' });
+                    if (up.error) throw up.error;
+                    uploaded.push(path);
+                    paths.push(path);
                 }
-                const row = { ...d, photo_path: uploaded || (removeOld ? null : photoPath) };
+                fine.textContent = 'Publishing…';
+                const row = { ...d, photo_paths: paths.length ? paths : null, photo_path: paths[0] || null };
                 const res = editing
                     ? await sb.from('pages').update(row).eq('id', editing.id).select().single()
                     : await sb.from('pages').insert(row).select().single();
                 if (res.error) throw res.error;
-                // Clean up the photo this page no longer uses
-                if (photoPath && removeOld) await sb.storage.from('photos').remove([photoPath]);
+                // Clean up the photos this page no longer uses
+                const unused = oldPaths.filter(p => !paths.includes(p));
+                if (unused.length) await sb.storage.from('photos').remove(unused);
                 showDone(res.data);
             } catch (err) {
-                if (uploaded) await sb.storage.from('photos').remove([uploaded]);
+                if (uploaded.length) await sb.storage.from('photos').remove(uploaded);
                 btn.disabled = false;
                 say(friendlyError(err));
             }

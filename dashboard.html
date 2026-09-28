@@ -60,6 +60,8 @@
         .note { grid-column: 1 / -1; font-family: 'Caveat', cursive; font-size: 1.25rem; color: #ffd7c8; line-height: 1.2; overflow-wrap: anywhere; }
         .tfoot { display: flex; gap: 8px; padding: 0 14px 12px; flex-wrap: wrap; }
         .ticket.seen { opacity: .78; }
+        .ticket.old { opacity: .5; }
+        .ticket.old h3 { text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, .45); }
 
         .empty { padding: 26px 22px; text-align: center; }
         .empty .sticker { width: 150px; height: 148px; margin: 0 auto 14px; transform: rotate(3deg); }
@@ -245,7 +247,8 @@
                 if (!confirm(`Delete /p/${pg.slug} and all its answers? This can't be undone.`)) return;
                 const { error } = await sb.from('pages').delete().eq('id', pg.id);
                 if (error) return toast(friendlyError(error));
-                if (pg.photo_path) await sb.storage.from('photos').remove([pg.photo_path]);
+                const paths = pg.photo_paths && pg.photo_paths.length ? pg.photo_paths : pg.photo_path ? [pg.photo_path] : [];
+                if (paths.length) await sb.storage.from('photos').remove(paths);
                 toast('Page deleted');
                 selected = null;
                 load();
@@ -259,7 +262,13 @@
             box.append(top, lb, acts, sec);
 
             if (!mine.length) box.append(el('p', 'quiet', 'No answer yet. Send them the link! 💌'));
-            mine.forEach((a, i) => box.append(ticket(a, i === 0 && !a.seen_at, pg)));
+            // A changed date points at the one it replaced; the old one stays, dimmed, below the new one
+            const replaced = new Set(mine.map(a => a.replaces).filter(Boolean));
+            mine.forEach((a, i) => {
+                const earlier = mine.slice(i + 1).some(b => b.email === a.email);
+                const kind = replaced.has(a.id) ? 'old' : a.replaces ? 'changed' : earlier ? 'another' : null;
+                box.append(ticket(a, i === 0 && !a.seen_at, pg, kind));
+            });
 
             // Mark them seen once they've been shown
             if (unseen) {
@@ -272,8 +281,8 @@
         }
 
         // Times: starts_at is the real moment (UTC). Show it in the timezone they picked it in.
-        function ticket(a, newest, pg) {
-            const t = el('div', 'ticket' + (a.seen_at ? ' seen' : ''));
+        function ticket(a, newest, pg, kind) {
+            const t = el('div', 'ticket' + (a.seen_at ? ' seen' : '') + (kind === 'old' ? ' old' : ''));
             const start = a.starts_at ? new Date(a.starts_at) : null;
             const tz = a.timezone || undefined;
             const fmt = (opts) => { try { return start.toLocaleString('en-US', { ...opts, timeZone: tz }); } catch { return start.toLocaleString('en-US', opts); } };
@@ -283,7 +292,9 @@
             const today = received.toDateString() === new Date().toDateString();
 
             const head = el('div', 'thead'), left = el('div');
-            left.append(el('div', 'admit', newest ? 'ADMIT TWO · THEY SAID YES' : 'ADMIT TWO'), el('h3', null, `${PLAN_ICON(a.plan)} ${planName(a.plan)}`));
+            const admit = kind === 'old' ? 'OLD PLAN · THEY CHANGED IT' : kind === 'changed' ? 'ADMIT TWO · NEW PLAN' : kind === 'another' ? 'ADMIT TWO · ANOTHER DATE'
+                : newest ? 'ADMIT TWO · THEY SAID YES' : 'ADMIT TWO';
+            left.append(el('div', 'admit', admit), el('h3', null, `${PLAN_ICON(a.plan)} ${planName(a.plan)}`));
             const when = el('div', 'when');
             when.append('received', el('br'), today ? 'today, ' + received.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : received.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
             head.append(left, when);
@@ -297,7 +308,7 @@
             if (a.note) grid.append(el('p', 'note', `“${a.note}”`));
 
             t.append(head, el('div', 'perf'), grid);
-            if (start) {
+            if (start && kind !== 'old') {
                 const foot = el('div', 'tfoot');
                 const end = new Date(start.getTime() + 2 * 3600000);
                 // Real UTC stamps that keep the Z, so Google puts it at the right moment wherever you are

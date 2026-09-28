@@ -69,9 +69,11 @@ Then a question sits under a moving night sky: "Can I steal you for a date, love
 
 **Press F for fullscreen** (on a computer), and F again to leave. It's ignored while typing in a text box.
 
-**Yes opens the planner.** Confetti, then a frosted-glass pop-up: tappable day cards for the next three weeks, what you're doing (coffee, dinner, a movie or a surprise), a time (or "Other" for any time), their email and an optional note. The button says what's still missing instead of hiding.
+**Yes opens the planner.** Confetti, then a frosted-glass pop-up: tappable day cards for the next three weeks, what you're doing (coffee, dinner, a movie or a surprise), a time (or "Other" for any time), their email and an optional note. The button says what's still missing instead of hiding. On builder pages there's also an **Other date** card that opens a date picker, for any day up to two years out.
 
 **Confirming gives them a ticket.** An "Admit Two" date ticket with the date, time, plan and note, plus **Add to Google Calendar** (with the asker as a guest) and **Save for iPhone / Outlook** (a calendar file). The answer is sent to the asker: by email on my page, or to the dashboard on builder pages.
+
+**Then the page says "See you soon".** On builder pages, once the ticket is closed the question is replaced by the date: "See you soon, *pet name*", the day, time and plan with a countdown, and two cats having a picnic. From there they can open the ticket again, **Change** the date (the planner opens filled in with it) or **Add another date**. Opening the link again on the same phone shows the same thing.
 
 **Sharing the link looks nice.** Messenger, IG and the like show a preview card with the sunset and the question instead of a bare URL.
 
@@ -102,7 +104,7 @@ As you type, the phone on the right shows your real page, live. On a phone, the 
 | | **You're their…** | Boyfriend, girlfriend or partner. Used in "A date request from your girlfriend" and "Please don't leave your girl hanging" |
 | 2 · The question | **Headline** | The big question. The word right **before** the first comma glows in the sunset colour, so "Can I steal you for a **date**, love?" |
 | | **Under the headline** | One line under the question |
-| 3 · Your card | **Your photo** (optional) | A photo of you for the "hopeless romantic" card. JPG, PNG or WebP. It's shrunk in your browser before upload, which also removes location data from phone photos. With no photo, the card shows just the text |
+| 3 · Your card | **Your photos** (optional) | Up to 10 photos for the "hopeless romantic" card. With more than one they play as a slideshow (they can also tap or swipe through them). Tap a photo to make it the first one, ✕ removes it. JPG, PNG or WebP. They're shrunk in your browser before upload, which also removes location data from phone photos. With no photo, the card shows just the text |
 | | **Card title** | e.g. "Jamie, still falling for you every day." The word right **after** the first comma glows |
 | | **A few words about you** | A short, sweet paragraph |
 | 4 · Music | **YouTube link** (optional) | Paste any YouTube link (`youtube.com/watch?v=…`, `youtu.be/…` or Shorts). Leave it empty for the default song |
@@ -122,14 +124,14 @@ When they say yes and lock in a date, it shows up on your **dashboard** (**My pa
 
 ![The dashboard: a list of pages on the left, and the selected page's answers as date tickets on the right](docs/screenshots/dashboard-laptop.png)
 
-Each answer is a ticket with the **day and time** (in their timezone), what you're doing, their email and their note. It has **Add to Google Calendar** and **.ics** buttons, so you can save it too.
+Each answer is a ticket with the **day and time** (in their timezone), what you're doing, their email and their note. It has **Add to Google Calendar** and **.ics** buttons, so you can save it too. If they change a date, the new one says **New plan** and the old one is dimmed and crossed out; an extra date says **Another date**.
 
 <img src="docs/screenshots/dashboard-phone.png" alt="The dashboard on a phone" width="260">
 
 On the dashboard you can also:
 
 - **Edit** a page: change any words, the photo, the song or even the link. The old link stops working if you change it.
-- **Delete** a page, along with all its answers and its photo.
+- **Delete** a page, along with all its answers and its photos.
 - **Make another page**, up to **5 pages** per account.
 
 ### What they see
@@ -222,7 +224,7 @@ The design was mocked up and approved before it was built:
 - **What's public:** the words, photo and song on your page, and your email if you ticked "Add me as a guest". Who owns a page is not public.
 - **What's private:** answers (the day, time, plan, their email and note) are visible only to the page's owner.
 - **Photos** are shrunk in your browser before upload, which removes location data. Anyone with a photo's link can view it, the same as the page.
-- **Deleting** a page removes its answers and photo.
+- **Deleting** a page removes its answers and photos.
 - **The key in the code** (`sb_publishable_…`) is Supabase's public key and is safe to publish. Row Level Security protects the data. The secret `service_role` key is not in this repo and must never be.
 - **See something that shouldn't be there?** Use **Report this page** at the bottom of the page.
 
