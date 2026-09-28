@@ -432,7 +432,21 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
+
+        /* ---------- Pages made with the public builder (/p/<slug>) ---------- */
+        .custom-loading .nav, .custom-loading main, .custom-loading .cat, .custom-loading .bubble { visibility: hidden; }
+        .me-card.no-photo { grid-template-columns: 1fr; }
+        .page-foot { margin-top: 26px; display: flex; gap: 16px; justify-content: center; font-size: .78rem; color: var(--muted); }
+        .page-foot a, .page-foot button { color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+        .page-foot a:hover, .page-foot button:hover { color: #ffd0b8; }
+        .missing { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; text-align: center; }
+        .missing .panel { transform: none; }
+        .missing .btn { margin-top: 18px; }
     </style>
+    <script>
+        // Someone else's page from the public builder: hide Mark's words until theirs have loaded
+        if (/^\/p\/[^/]+\/?$/.test(location.pathname) || /[?&](p|preview)=/.test(location.search)) document.documentElement.classList.add('custom-loading');
+    </script>
 </head>
 <body>
     <div class="nebula" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -459,8 +473,8 @@
 
     <main>
         <div class="badge"><em>New</em> A date request from your boyfriend ›</div>
-        <h1>Can I steal you for a <span>date</span>, love?</h1>
-        <p class="lead">You already have my heart. Now I'd like your calendar.</p>
+        <h1 id="headline">Can I steal you for a <span>date</span>, love?</h1>
+        <p class="lead" id="leadText">You already have my heart. Now I'd like your calendar.</p>
 
         <div class="answer">
             <button class="btn btn-sun" id="yesBtn" type="button" data-yes>Yes, my love →</button>
@@ -478,8 +492,8 @@
                     <span class="kicker">The hopeless romantic</span>
                     <span class="online"><i></i>online · nervous</span>
                 </div>
-                <h2><span data-name>Mark</span>, <span class="grad">still</span> falling for you every day.</h2>
-                <p>Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</p>
+                <h2 id="cardTitle"><span data-name>Mark</span>, <span class="grad">still</span> falling for you every day.</h2>
+                <p id="cardBody">Still opens every door. Still remembers the little things. Already picked the playlist for the drive, and somehow still gets nervous asking you out.</p>
                 <div class="stats">
                     <div class="stat"><small>Butterflies, still</small><b data-count="98" data-suffix="%">0%</b>
                         <svg viewBox="0 0 100 18" preserveAspectRatio="none"><polyline fill="none" stroke="#ff8a4a" stroke-width="1.8" points="0,15 15,12 30,13 45,8 60,9 75,4 100,2"/></svg></div>
@@ -586,7 +600,7 @@
     <div id="player"></div>
 
     <script>
-    (() => {
+    (async () => {
         /* ================= Make it yours =================
            Everything personal lives here. Change these, swap the photos in Pics/, and it's your page.
            The headline and the rest of the wording are plain text in the HTML above. */
@@ -597,20 +611,108 @@
             songId: 'RgOIt-jOz-k',                                  // YouTube video ID of the background song
             photo: 'Pics/mark.jpg'                                  // your photo on the "hopeless romantic" card
         };
-        const MARK_EMAIL = CONFIG.email;
+
+        /* ================= Pages made with the public builder =================
+           /p/<slug> (Vercel) or ?p=<slug> loads someone else's page from Supabase and swaps in their words.
+           With neither, nothing below runs and this stays Mark's page, exactly as above.
+           ?preview=1 is the builder's live preview: it reads the draft from localStorage and never saves answers.
+           The publishable key is public by design; Row Level Security protects the data. */
+        const SUPABASE_URL = 'https://xrjkwjcftuthdgdebxwg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_chg_qwfzBHba_GZZZRFGyw__jI7v4oe';
+        const SLUG = (location.pathname.match(/^\/p\/([a-z0-9-]{3,40})\/?$/) || [])[1] || new URLSearchParams(location.search).get('p');
+        const PREVIEW = new URLSearchParams(location.search).has('preview');
+        const ROOT = location.pathname.startsWith('/p/') ? '/' : '';   // /p/<slug> is one folder deep
+        const PAGE = (SLUG || PREVIEW) ? await loadPage() : null;
+        if ((SLUG || PREVIEW) && !PAGE) return pageMissing();
+
+        async function loadPage() {
+            if (PREVIEW) {
+                try { return JSON.parse(localStorage.getItem('dp-preview')) || null; } catch { return null; }
+            }
+            const cols = 'id,slug,sender_name,pet_name,role,headline,lead,card_title,card_body,photo_path,song_id,calendar_email,cat_lines';
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/pages?slug=eq.${encodeURIComponent(SLUG)}&select=${cols}&limit=1`, { headers: { apikey: SUPABASE_KEY } });
+                if (!res.ok) return null;
+                const row = (await res.json())[0];
+                if (row && row.photo_path) row.photo_url = `${SUPABASE_URL}/storage/v1/object/public/photos/${row.photo_path}`;
+                return row || null;
+            } catch { return null; }
+        }
+
+        function pageMissing() {
+            document.documentElement.classList.remove('custom-loading');
+            document.querySelectorAll('.nav, main, .cat, .bubble').forEach(el => el.remove());
+            document.body.insertAdjacentHTML('beforeend', `<div class="missing"><div class="panel">
+                <img class="sticker" src="${ROOT}Pics/cat-heart.jpg" alt="" width="172" height="148" style="width:150px;height:130px;margin:0 auto 14px;transform:rotate(-4deg)">
+                <h2>This page isn't available</h2><p class="sub">The link may be mistyped, or the page was taken down.</p>
+                <a class="btn btn-sun" href="${ROOT}create.html">Make your own date page →</a></div></div>`);
+        }
+
+        const MARK_EMAIL = PAGE ? PAGE.calendar_email : CONFIG.email;
         const FORMSPREE_URL = CONFIG.formspreeUrl;
-        const SONG_ID = CONFIG.songId;
-        const NAME = CONFIG.name;
+        const SONG_ID = PAGE ? (PAGE.song_id || CONFIG.songId) : CONFIG.songId;
+        const NAME = PAGE ? PAGE.sender_name : CONFIG.name;
 
         const $ = (s, root = document) => root.querySelector(s);
         const rand = (a, b) => a + Math.random() * (b - a);
         const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
         document.querySelectorAll('[data-name]').forEach(el => { el.textContent = el.dataset.name === 'upper' ? NAME.toUpperCase() : NAME; });
-        document.querySelector('.me-photo img').src = CONFIG.photo;
+        document.querySelector('.me-photo img').src = PAGE ? (PAGE.photo_url || '') : CONFIG.photo;
         document.querySelector('.me-card').setAttribute('aria-label', 'About ' + NAME);
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         let saidYes = false;
+
+        // Wording for builder pages. "He" only fits Mark, so these use the creator's name instead.
+        const ROLE = PAGE ? PAGE.role : 'boyfriend';
+        const MAN = PAGE ? ({ boyfriend: 'your man', girlfriend: 'your girl' }[ROLE] || NAME) : 'your man';
+        if (PAGE) applyPage();
+
+        function applyPage() {
+            const text = (sel, v) => { if (v != null && v !== '') $(sel).textContent = v; };
+            // The word before the first comma glows (or the last word, with no comma), like "date" in Mark's headline
+            const glow = (el, str, afterComma) => {
+                const m = afterComma ? str.match(/^([^,]*,\s*)(\S+)(.*)$/) : str.match(/^(.*?)([^\s,?!.]+)(\s*,.*|[?!.]*)$/);
+                el.textContent = '';
+                if (!m) return void (el.textContent = str);
+                const span = document.createElement('span');
+                if (afterComma) span.className = 'grad';
+                span.textContent = m[2];
+                el.append(m[1], span, m[3]);
+            };
+            glow($('#headline'), PAGE.headline, false);
+            text('#leadText', PAGE.lead);
+            if (PAGE.card_title) glow($('#cardTitle'), PAGE.card_title, true);
+            text('#cardBody', PAGE.card_body);
+            const pet = PAGE.pet_name || 'love';
+            $('.badge').lastChild.textContent = ` A date request from your ${ROLE} ›`;
+            $('#yesBtn').textContent = `Yes, my ${pet} →`;
+            $('.me-photo figcaption').textContent = `${MAN}, waiting 🖤`;
+            $('#pleaseModal .sub').textContent = `This little one saved you a heart. Please don't leave ${MAN} hanging.`;
+            $('#planModal .sub').textContent = `Pick whatever feels right, ${pet}. I'll make it happen.`;
+            $('#ticketModal .sub').textContent = `Keep this, ${pet}. I'll be the one smiling at the door.`;
+            if (!PAGE.photo_url) {
+                $('.me-photo').remove();
+                $('.me-card').classList.add('no-photo');
+            }
+            document.title = PAGE.headline + ' 🌅';
+            $('.me-photo img')?.setAttribute('alt', NAME);
+
+            // Small footer: make your own, and report a page that shouldn't be here
+            $('main').insertAdjacentHTML('beforeend', `<p class="page-foot"><a href="${ROOT}create.html">Make your own</a>${PREVIEW ? '' : '<button type="button" id="reportBtn">Report this page</button>'}</p>`);
+            document.body.insertAdjacentHTML('beforeend', `
+                <div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+                    <form class="panel" id="reportForm">
+                        <button class="close-x" type="button" data-close aria-label="Close">✕</button>
+                        <h2 id="reportTitle">Report this page</h2>
+                        <p class="sub">Tell us what's wrong. We'll take a look and hide it if it breaks the rules.</p>
+                        <textarea class="field" id="reportReason" maxlength="500" required placeholder="What's wrong with it?" style="margin-top:14px"></textarea>
+                        <button class="btn btn-sun submit" type="submit">Send report</button>
+                        <p class="form-error" id="reportStatus" aria-live="polite"></p>
+                    </form>
+                </div>`);
+            document.documentElement.classList.remove('custom-loading');
+        }
 
         /* ================= Sky ================= */
         const sky = (() => {
@@ -818,9 +920,12 @@
         const VOLUME = 35;
         let player, playerReady = false, userMuted = false, heard = false;
 
-        const ytTag = document.createElement('script');
-        ytTag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(ytTag);
+        // The builder's live preview reloads on every keystroke, so it stays quiet
+        if (!PREVIEW) {
+            const ytTag = document.createElement('script');
+            ytTag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(ytTag);
+        }
 
         window.onYouTubeIframeAPIReady = () => {
             player = new YT.Player('player', {
@@ -924,6 +1029,28 @@
                 else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
             }
         });
+
+        if (PAGE && !PREVIEW) {
+            $('#reportBtn').addEventListener('click', () => openModal('reportModal'));
+            $('#reportForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const reason = $('#reportReason').value.trim(), status = $('#reportStatus');
+                if (!reason) return void (status.textContent = 'Tell us what\'s wrong first.');
+                status.textContent = 'Sending…';
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports`, {
+                        method: 'POST',
+                        headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                        body: JSON.stringify({ page_id: PAGE.id, reason })
+                    });
+                    if (!res.ok) throw new Error(res.status);
+                    status.textContent = 'Thanks. We\'ll take a look.';
+                    setTimeout(() => closeModal($('#reportModal')), 1400);
+                } catch {
+                    status.textContent = 'Couldn\'t send that. Please try again.';
+                }
+            });
+        }
 
         /* ================= The No button that doesn't want to be clicked ================= */
         const yesBtn = $('#yesBtn'), noBtn = $('#noBtn'), noTalk = $('#noTalk');
@@ -1099,12 +1226,17 @@
                 otherTime.classList.toggle('hidden', e.target.value !== 'other');
                 if (e.target.value === 'other') otherTime.focus();
             }
-            if (e.target.name === 'plan') cat.react(pick({
+            if (e.target.name === 'plan') cat.react(pick((PAGE ? {
+                'Coffee ☕': [`coffee! ${NAME} knows the cutest café ☕`, 'cozy choice 🤎'],
+                'Dinner 🍝': [`dinner! ${NAME} said you can pick dessert 🍰`, 'ooh fancy 🍝'],
+                'A movie 🎬': [`${NAME} will share the popcorn. probably. 🍿`, `you pick the movie, ${NAME} cries at the end`],
+                'Surprise me ✨': [`ooh ${NAME} LOVES surprises ✨`, 'brave. i like you.']
+            } : {
                 'Coffee ☕': ['coffee! he knows the cutest café ☕', 'cozy choice 🤎'],
                 'Dinner 🍝': ['dinner! he said he\'d let you pick dessert 🍰', 'ooh fancy 🍝'],
                 'A movie 🎬': ['he\'ll share the popcorn. probably. 🍿', 'you pick the movie, he cries at the end'],
                 'Surprise me ✨': ['ooh he LOVES surprises ✨', 'brave. i like you.']
-            }[e.target.value]), 3200);
+            })[e.target.value]), 3200);
             refreshSubmit();
         });
         form.addEventListener('input', refreshSubmit);
@@ -1137,8 +1269,8 @@
 
             openModal('ticketModal');
             celebrate();
-            cat.react(pick(['it\'s official!! 💕', 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
-            sendToMark();
+            cat.react(pick(['it\'s official!! 💕', PAGE ? `${NAME}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
+            PAGE ? saveAnswer() : sendToMark();
         });
 
         /* ================= Sending + calendar ================= */
@@ -1169,6 +1301,31 @@
             }
         }
 
+        // Builder pages save the answer in Supabase; the creator sees it on their dashboard
+        async function saveAnswer() {
+            const v = lastDate;
+            sendStatus.className = 'send-status';
+            if (PREVIEW) return void (sendStatus.textContent = 'This is a preview, so nothing was sent.');
+            sendStatus.textContent = `Sending to ${NAME}…`;
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/answers`, {
+                    method: 'POST',
+                    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                    body: JSON.stringify({
+                        page_id: PAGE.id, day: v.day, time: v.time, starts_at: v.start.toISOString(), plan: v.plan,
+                        email: v.email, note: v.note || null, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
+                    })
+                });
+                if (!res.ok) throw new Error(res.status);
+                sendStatus.className = 'send-status ok';
+                sendStatus.textContent = `✓ Sent to ${NAME}. They're probably screaming right now.`;
+            } catch {
+                sendStatus.className = 'send-status err';
+                sendStatus.innerHTML = `Couldn't reach ${NAME}. <button type="button">Try again</button>`;
+                sendStatus.querySelector('button').addEventListener('click', saveAnswer);
+            }
+        }
+
         const pad = n => String(n).padStart(2, '0');
         const localStamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
         const utcStamp = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -1178,9 +1335,9 @@
                 action: 'TEMPLATE',
                 text: `Our Date 💕 (${v.plan})`,
                 dates: `${localStamp(v.start)}/${localStamp(v.end)}`,
-                details: v.note ? `A special date!\n\n“${v.note}”` : 'A special date!',
-                add: MARK_EMAIL
+                details: v.note ? `A special date!\n\n“${v.note}”` : 'A special date!'
             });
+            if (MARK_EMAIL) params.set('add', MARK_EMAIL);
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             if (tz) params.set('ctz', tz);
             return 'https://calendar.google.com/calendar/render?' + params;
@@ -1222,7 +1379,7 @@
         counters.forEach(c => io.observe(c));
 
         /* ================= The pixel cat ================= */
-        const CAT_LINES = [
+        const MARK_CAT_LINES = [
             'psst… he\'s still crazy about you 💕', 'you look extra pretty today', 'just say yes 🥺',
             'he still practised this for a whole week', "i'd share my fish with you. that's love.",
             'meow means yes, right?', 'he wore his best coat for you 🖤', "he's been smiling at your photos all day",
@@ -1231,10 +1388,20 @@
             "i'm just a cat but i ship it", 'he talks about you. a lot. i would know.', 'hopeless romantic. certified.', 'he misses you even when you\'re in the next room',
             'did you see that shooting star? make a wish 🌠', 'he knows your coffee order by heart ☕'
         ];
+        const n = NAME;
+        const OWN_LINES = PAGE && Array.isArray(PAGE.cat_lines) ? PAGE.cat_lines.filter(l => typeof l === 'string' && l.trim()) : [];
+        const CAT_LINES = !PAGE ? MARK_CAT_LINES : OWN_LINES.length ? OWN_LINES : [
+            `psst… ${n}'s still crazy about you 💕`, 'you look extra pretty today', 'just say yes 🥺',
+            `${n} practised this for a whole week`, "i'd share my fish with you. that's love.", 'meow means yes, right?',
+            `${n} has been smiling at your photos all day`, `i've heard ${n}'s playlist. it's all love songs.`,
+            `10/10 ${ROLE}. would recommend.`, 'you two = purrfect', `don't tell ${n} i told you… they still get nervous around you`,
+            'you make the stars shine brighter ✨', "i'm just a cat but i ship it", `${n} talks about you. a lot. i would know.`,
+            'hopeless romantic. certified.', 'did you see that shooting star? make a wish 🌠', `${n} knows your coffee order by heart ☕`
+        ];
         const CAT_NO_LINES = ['hehe, it\'s scared of you', 'that button has trust issues', 'try the pink one 👉', 'wrong one, cutie'];
-        const CAT_YES_LINES = ['YAYYY I KNEW IT 💕', 'he\'s going to be SO happy', 'best. decision. ever. 🎉'];
+        const CAT_YES_LINES = ['YAYYY I KNEW IT 💕', PAGE ? `${n}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever. 🎉'];
         const CAT_AFTER_LINES = [
-            'can i come too? no? okay 🥲', 'wear something comfy, you\'ll laugh a lot', 'he\'s already planning the next one',
+            'can i come too? no? okay 🥲', 'wear something comfy, you\'ll laugh a lot', PAGE ? `${n}'s already planning the next one` : 'he\'s already planning the next one',
             'pick dessert. trust me 🍰', 'you two are still so cute. i said what i said.', 'don\'t forget to save the date 📅'
         ];
 
@@ -1385,7 +1552,7 @@
                 state = 'sit'; until = Infinity;
                 setInterval(() => talk(nextLine()), 9000);
             }
-            setTimeout(() => talk('hi! 👋 i\'m his wingcat', 3500), 2600);
+            setTimeout(() => talk(PAGE ? `hi! 👋 i'm ${n}'s wingcat` : 'hi! 👋 i\'m his wingcat', 3500), 2600);
             requestAnimationFrame(tick);
             return { react };
         })();
