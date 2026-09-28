@@ -477,6 +477,42 @@
         .missing { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; text-align: center; }
         .missing .panel { transform: none; }
         .missing .btn { margin-top: 18px; }
+
+        /* Several photos: a slideshow that crossfades (tap or swipe for the next one) */
+        .me-photo.slides { touch-action: pan-y; cursor: pointer; }
+        .me-photo.slides img { position: absolute; inset: 0; opacity: 0; transition: opacity 1.1s ease, transform 6s ease; }
+        .me-photo.slides img.on { opacity: 1; }
+        .dots { position: absolute; right: 12px; bottom: 14px; z-index: 2; display: flex; gap: 5px; }
+        .dots button { width: 7px; height: 7px; padding: 0; border-radius: 99px; border: 0; cursor: pointer; background: rgba(255, 255, 255, 0.45); transition: width .3s, background .3s; }
+        .dots button[aria-current="true"] { width: 18px; background: #fff; }
+
+        /* "Pick a date" chip and its date field */
+        .day.pick span { width: 64px; }
+        .day.pick b { font-size: 1.05rem; line-height: 1.45; }
+        input[type="date"].field { color-scheme: dark; margin-top: 9px; }
+
+        /* After the date is locked in: "see you" instead of the question */
+        .set { margin-top: 26px; width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; }
+        .set .sticker { width: 170px; height: 213px; transform: rotate(-3deg); animation: wobble 4s ease-in-out infinite; }
+        .set-list { width: 100%; display: grid; gap: 9px; margin-top: 20px; text-align: left; }
+        .set-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.13); background: rgba(22, 20, 28, 0.6);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        }
+        .set-day { flex: none; width: 54px; padding: 7px 0; border-radius: 13px; text-align: center; background: var(--sun); box-shadow: 0 8px 22px -8px rgba(255, 90, 95, .85); }
+        .set-day small, .set-day em { display: block; font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; font-style: normal; color: #ffe6e0; }
+        .set-day b { display: block; font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 1.3rem; line-height: 1.1; }
+        .set-info { min-width: 0; flex: 1; }
+        .set-info b { display: block; font-weight: 600; font-size: .95rem; }
+        .set-info span { display: block; font-size: .8rem; color: var(--muted); margin-top: 2px; }
+        .set-row .btn { flex: none; }
+        .set-actions { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+        @media (max-width: 480px) {
+            .set-row { flex-wrap: wrap; }
+            .set-row .set-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        }
+        .set-btns { display: flex; gap: 8px; }
     </style>
     <script>
         // Someone else's page from the public builder: hide Mark's words until theirs have loaded
@@ -676,15 +712,23 @@
 
         async function loadPage() {
             if (PREVIEW) {
-                try { return JSON.parse(localStorage.getItem('dp-preview')) || null; } catch { return null; }
+                try {
+                    const d = JSON.parse(localStorage.getItem('dp-preview')) || null;
+                    if (d && !d.photo_urls) d.photo_urls = d.photo_url ? [d.photo_url] : [];
+                    return d;
+                } catch { return null; }
             }
-            const cols = 'id,slug,sender_name,pet_name,role,headline,lead,card_title,card_body,photo_path,song_id,calendar_email,cat_lines';
+            const cols = 'id,slug,sender_name,pet_name,role,headline,lead,card_title,card_body,photo_path,photo_paths,song_id,calendar_email,cat_lines';
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/pages?slug=eq.${encodeURIComponent(SLUG)}&select=${cols}&limit=1`, { headers: { apikey: SUPABASE_KEY } });
                 if (!res.ok) return null;
                 const row = (await res.json())[0];
-                if (row && row.photo_path) row.photo_url = `${SUPABASE_URL}/storage/v1/object/public/photos/${row.photo_path}`;
-                return row || null;
+                if (!row) return null;
+                // Several photos play as a slideshow; older pages have just the one
+                const paths = row.photo_paths && row.photo_paths.length ? row.photo_paths : row.photo_path ? [row.photo_path] : [];
+                row.photo_urls = paths.map(p => `${SUPABASE_URL}/storage/v1/object/public/photos/${p}`);
+                row.photo_url = row.photo_urls[0] || '';
+                return row;
             } catch { return null; }
         }
 
@@ -746,7 +790,7 @@
             if (!PAGE.photo_url) {
                 $('.me-photo').remove();
                 $('.me-card').classList.add('no-photo');
-            }
+            } else if (PAGE.photo_urls.length > 1) slideshow(PAGE.photo_urls);
             document.title = PAGE.headline + ' 🌅';
             $('.me-photo img')?.setAttribute('alt', NAME);
 
@@ -764,6 +808,48 @@
                     </form>
                 </div>`);
             document.documentElement.classList.remove('custom-loading');
+        }
+
+        // Several photos on the card: crossfade every few seconds; tap, swipe or the dots for the next one
+        function slideshow(urls) {
+            const fig = $('.me-photo'), first = fig.querySelector('img');
+            fig.classList.add('slides');
+            const imgs = [first, ...urls.slice(1).map(u => {
+                const img = first.cloneNode();
+                img.src = u;
+                img.loading = 'lazy';
+                fig.insertBefore(img, fig.querySelector('figcaption'));
+                return img;
+            })];
+            imgs.forEach((img, i) => img.setAttribute('alt', `${NAME}, photo ${i + 1} of ${imgs.length}`));
+            const dots = document.createElement('div');
+            dots.className = 'dots';
+            imgs.forEach((_, i) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.setAttribute('aria-label', `Photo ${i + 1}`);
+                b.addEventListener('click', e => { e.stopPropagation(); show(i); });
+                dots.append(b);
+            });
+            fig.append(dots);
+            let at = 0, timer = null;
+            function show(i) {
+                at = (i + imgs.length) % imgs.length;
+                imgs.forEach((img, k) => img.classList.toggle('on', k === at));
+                dots.querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-current', String(k === at)));
+                clearInterval(timer);
+                if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => show(at + 1), 4200);
+            }
+            let downX = null;
+            fig.addEventListener('pointerdown', e => { downX = e.clientX; });
+            fig.addEventListener('pointerup', e => {
+                if (downX == null) return;
+                const dx = e.clientX - downX;
+                downX = null;
+                if (e.target.closest('.dots')) return;
+                show(at + (dx > 40 ? -1 : 1));   // swipe right goes back; a tap or swipe left goes forward
+            });
+            show(0);
         }
 
         /* ================= Sky ================= */
@@ -1093,6 +1179,7 @@
 
         function closeModal(m) {
             m.classList.remove('open');
+            if (m.id === 'ticketModal') afterTicket();
             if (!document.querySelector('.modal.open')) document.body.classList.remove('modal-open');
             lastFocus?.focus?.({ preventScroll: true });
         }
@@ -1228,6 +1315,7 @@
         document.querySelectorAll('[data-yes]').forEach(b => b.addEventListener('click', sayYes));
 
         function sayYes() {
+            if (DATES.length) return openTicket(nextDate());   // the date is already set: show the ticket
             saidYes = true;
             playMusic();
             celebrate();
@@ -1269,6 +1357,13 @@
         const form = $('#planForm'), daysEl = $('#days'), otherTime = $('#otherTime');
         const submitBtn = $('#submitBtn'), formError = $('#formError'), emailEl = $('#email');
 
+        // Builder pages remember the dates locked in on this device, so the page turns into "see you" and they
+        // can change a date or add another. Mark's page doesn't (DATES stays empty there).
+        const DATES_KEY = PAGE && !PREVIEW ? 'dp-dates:' + PAGE.id : null;
+        let DATES = [];
+        if (DATES_KEY) { try { DATES = JSON.parse(localStorage.getItem(DATES_KEY)) || []; } catch {} }
+        let changing = null;   // the date being changed, 'new' for another date, null for the first one
+
         (function buildDays() {
             const today = new Date();
             for (let i = 1; i <= 21; i++) {
@@ -1280,10 +1375,39 @@
                 label.querySelector('input').setAttribute('aria-label', d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
                 daysEl.appendChild(label);
             }
+            if (!PAGE) return;
+            // Builder pages: any other date, from a date field (tomorrow up to two years out)
+            const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const label = document.createElement('label');
+            label.className = 'choice day pick';
+            label.innerHTML = '<input type="radio" name="day" value="other" aria-label="Pick another date"><span><small>Other</small><b>📅</b><em>date</em></span>';
+            daysEl.appendChild(label);
+            const field = document.createElement('input');
+            field.className = 'field hidden';
+            field.type = 'date';
+            field.id = 'otherDay';
+            field.setAttribute('aria-label', 'Pick a date');
+            field.min = iso(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
+            field.max = iso(new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()));
+            daysEl.after(field);
         })();
 
+        // The "Other" day chip shows the date that was picked in it
+        function showPickedDay() {
+            const chip = form.querySelector('.day.pick span'), v = $('#otherDay')?.value;
+            if (!chip) return;
+            const [y, m, d] = (v || '').split('-').map(Number);
+            const dt = v ? new Date(y, m - 1, d) : null;
+            chip.innerHTML = dt ? `<small>${dt.toLocaleDateString('en-US', { weekday: 'short' })}</small><b>${d}</b><em>${dt.toLocaleDateString('en-US', { month: 'short' })}${y !== new Date().getFullYear() ? ` ’${String(y).slice(2)}` : ''}</em>`
+                : '<small>Other</small><b>📅</b><em>date</em>';
+        }
+
         function readForm() {
-            const day = form.querySelector('input[name="day"]:checked')?.value;
+            let day = form.querySelector('input[name="day"]:checked')?.value;
+            if (day === 'other') {
+                const f = $('#otherDay');
+                day = f.value && f.value >= f.min && f.value <= f.max ? f.value : '';
+            }
             const plan = form.querySelector('input[name="plan"]:checked')?.value;
             let time = form.querySelector('input[name="time"]:checked')?.value;
             if (time === 'other') time = otherTime.value;
@@ -1301,7 +1425,7 @@
 
         function refreshSubmit() {
             const need = missing(readForm());
-            submitBtn.textContent = need || 'Lock it in →';
+            submitBtn.textContent = need || (changing && changing !== 'new' ? 'Send the new plan →' : 'Lock it in →');
             submitBtn.classList.toggle('waiting', !!need);
             if (!need) formError.textContent = '';
         }
@@ -1311,6 +1435,11 @@
                 otherTime.classList.toggle('hidden', e.target.value !== 'other');
                 if (e.target.value === 'other') otherTime.focus();
             }
+            if (e.target.name === 'day' && $('#otherDay')) {
+                $('#otherDay').classList.toggle('hidden', e.target.value !== 'other');
+                if (e.target.value === 'other') { $('#otherDay').focus(); try { $('#otherDay').showPicker(); } catch {} }
+            }
+            if (e.target.id === 'otherDay') showPickedDay();
             if (e.target.name === 'plan') cat.react(pick((PAGE ? {
                 'Coffee ☕': [`coffee! ${NAME} knows the cutest café ☕`, 'cozy choice 🤎'],
                 'Dinner 🍝': [`dinner! ${NAME} said you can pick dessert 🍰`, 'ooh fancy 🍝'],
@@ -1329,6 +1458,25 @@
 
         let lastDate = null;
 
+        // A date from its parts, in her own local time (the old version mixed UTC and local time)
+        function withTimes(v) {
+            const [y, mo, d] = v.day.split('-').map(Number);
+            const [h, mi] = v.time.split(':').map(Number);
+            const start = new Date(y, mo - 1, d, h, mi);
+            return { ...v, start, end: new Date(start.getTime() + 2 * 3600000) };
+        }
+
+        function showTicket(v) {
+            lastDate = v;
+            $('#tWhen').textContent = v.start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            $('#tTime').textContent = v.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            $('#tPlan').textContent = v.plan;
+            const noteEl = $('#tNote');
+            noteEl.textContent = v.note ? `“${v.note}”` : '';
+            noteEl.classList.toggle('hidden', !v.note);
+            $('#gcalLink').href = googleCalendarUrl(v);
+        }
+
         form.addEventListener('submit', e => {
             e.preventDefault();
             const v = readForm();
@@ -1338,24 +1486,17 @@
                 return;
             }
 
-            // Build the date in her own local time (the old version mixed UTC and local time)
-            const [y, mo, d] = v.day.split('-').map(Number);
-            const [h, mi] = v.time.split(':').map(Number);
-            const start = new Date(y, mo - 1, d, h, mi);
-            lastDate = { ...v, start, end: new Date(start.getTime() + 2 * 3600000) };
-
-            $('#tWhen').textContent = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            $('#tTime').textContent = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            $('#tPlan').textContent = v.plan;
-            const noteEl = $('#tNote');
-            noteEl.textContent = v.note ? `“${v.note}”` : '';
-            noteEl.classList.toggle('hidden', !v.note);
-            $('#gcalLink').href = googleCalendarUrl(lastDate);
-
+            const date = withTimes(v);
+            if (PAGE) {
+                // Visitors can't read answers back, so the page makes the id; a change points at the date it replaces
+                date.id = crypto.randomUUID();
+                date.replaces = changing && changing !== 'new' ? changing.id : null;
+            }
+            showTicket(date);
             openModal('ticketModal');
             celebrate();
-            cat.react(pick(['it\'s official!! 💕', PAGE ? `${NAME}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
-            PAGE ? saveAnswer() : sendToMark();
+            cat.react(pick(date.replaces ? ['new plan, who dis 😼', `${NAME} will love this one too`] : ['it\'s official!! 💕', PAGE ? `${NAME}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever.']), 4000);
+            PAGE ? saveAnswer(date) : sendToMark();
         });
 
         /* ================= Sending + calendar ================= */
@@ -1387,28 +1528,147 @@
         }
 
         // Builder pages save the answer in Supabase; the creator sees it on their dashboard
-        async function saveAnswer() {
-            const v = lastDate;
+        async function saveAnswer(v) {
             sendStatus.className = 'send-status';
-            if (PREVIEW) return void (sendStatus.textContent = 'This is a preview, so nothing was sent.');
+            if (PREVIEW) { sendStatus.textContent = 'This is a preview, so nothing was sent.'; return keepDate(v); }
             sendStatus.textContent = `Sending to ${NAME}…`;
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/answers`, {
                     method: 'POST',
                     headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
                     body: JSON.stringify({
-                        page_id: PAGE.id, day: v.day, time: v.time, starts_at: v.start.toISOString(), plan: v.plan,
+                        id: v.id, replaces: v.replaces || null, page_id: PAGE.id, day: v.day, time: v.time, starts_at: v.start.toISOString(), plan: v.plan,
                         email: v.email, note: v.note || null, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null
                     })
                 });
                 if (!res.ok) throw new Error(res.status);
                 sendStatus.className = 'send-status ok';
-                sendStatus.textContent = `✓ Sent to ${NAME}. They're probably screaming right now.`;
+                sendStatus.textContent = v.replaces ? `✓ Sent to ${NAME}. They'll see the new plan.` : `✓ Sent to ${NAME}. They're probably screaming right now.`;
+                keepDate(v);
             } catch {
                 sendStatus.className = 'send-status err';
                 sendStatus.innerHTML = `Couldn't reach ${NAME}. <button type="button">Try again</button>`;
-                sendStatus.querySelector('button').addEventListener('click', saveAnswer);
+                sendStatus.querySelector('button').addEventListener('click', () => saveAnswer(v));
             }
+        }
+
+        /* ================= After the date is locked in: "see you" ================= */
+        // Only dates that really reached them are kept. A change replaces the date it was made from.
+        function keepDate(v) {
+            const entry = { id: v.id, day: v.day, time: v.time, plan: v.plan, email: v.email, note: v.note };
+            const i = v.replaces ? DATES.findIndex(d => d.id === v.replaces) : -1;
+            if (i >= 0) DATES[i] = entry; else DATES.push(entry);
+            if (DATES_KEY) { try { localStorage.setItem(DATES_KEY, JSON.stringify(DATES)); } catch {} }
+            changing = null;
+            if (!$('#ticketModal').classList.contains('open')) renderSet();
+        }
+
+        // Called when the ticket closes
+        function afterTicket() {
+            if (DATES.length) renderSet();
+        }
+
+        const sortedDates = () => DATES.map(withTimes).sort((a, b) => a.start - b.start);
+        function nextDate() {
+            const list = sortedDates(), now = new Date();
+            return list.find(d => d.end > now) || list[list.length - 1];
+        }
+
+        function renderSet() {
+            if (!PAGE || !DATES.length) return;
+            saidYes = true;
+            const pet = PAGE.pet_name || 'love';
+            const next = nextDate(), now = new Date();
+            const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const days = Math.round((midnight(next.start) - midnight(now)) / 864e5);
+            const past = next.end <= now;
+            const whenLong = next.start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const timeText = next.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            // The question becomes "see you"
+            const [before, word, after] = past ? ['Let\'s do it ', 'again', `, ${pet}?`]
+                : days === 0 ? ['See you ', next.start.getHours() >= 17 ? 'tonight' : 'today', `, ${pet}`]
+                : days === 1 ? ['See you ', 'tomorrow', `, ${pet}`] : ['See you ', 'soon', `, ${pet}`];
+            const h1 = $('#headline'), glowWord = document.createElement('span');
+            glowWord.textContent = word;
+            h1.textContent = '';
+            h1.append(before, glowWord, after);
+            $('#leadText').textContent = past ? `That was a good one. ${NAME} is already planning the next.`
+                : `${whenLong} at ${timeText} · ${next.plan}. ` + (days === 0 ? 'Today\'s the day!' : days === 1 ? `${NAME} can't wait.` : `${days} days to go. ${NAME}'s counting.`);
+            $('.badge em').textContent = '✓';
+            $('.badge').lastChild.textContent = ` Your date with ${NAME} is set ›`;
+            $('.answer').classList.add('hidden');
+            $('#noTalk').classList.add('hidden');
+            $('.nav [data-yes]').textContent = 'Our date 🎟';
+            document.title = `See you soon 🌅 · ${NAME}`;
+
+            let box = $('#dateSet');
+            if (!box) {
+                box = document.createElement('section');
+                box.className = 'set';
+                box.id = 'dateSet';
+                box.setAttribute('aria-label', 'Your date');
+                box.innerHTML = `<img class="sticker" src="${ROOT}Pics/cat-picnic.jpg" alt="Two cats having a picnic, with “us?” between them" width="399" height="501">
+                    <div class="set-list"></div>
+                    <div class="set-actions"><button class="btn btn-glass" type="button" data-add>＋ Add another date</button></div>`;
+                box.querySelector('[data-add]').addEventListener('click', () => openPlanner(null));
+                $('.answer').after(box);
+            }
+            const list = box.querySelector('.set-list');
+            list.innerHTML = '';
+            for (const d of sortedDates()) {
+                const row = document.createElement('div');
+                row.className = 'set-row';
+                row.innerHTML = `<div class="set-day"><small></small><b></b><em></em></div><div class="set-info"><b></b><span></span></div>
+                    <div class="set-btns"><button class="btn btn-sun btn-small" type="button" data-ticket>Ticket 🎟</button><button class="btn btn-glass btn-small" type="button" data-change>Change</button></div>`;
+                row.querySelector('.set-day small').textContent = d.start.toLocaleDateString('en-US', { weekday: 'short' });
+                row.querySelector('.set-day b').textContent = d.start.getDate();
+                row.querySelector('.set-day em').textContent = d.start.toLocaleDateString('en-US', { month: 'short' });
+                row.querySelector('.set-info b').textContent = d.plan;
+                row.querySelector('.set-info span').textContent = d.start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + d.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                row.querySelector('[data-ticket]').addEventListener('click', () => openTicket(d));
+                row.querySelector('[data-change]').addEventListener('click', () => openPlanner(d));
+                list.append(row);
+            }
+        }
+
+        function openTicket(d) {
+            showTicket(d);
+            sendStatus.className = 'send-status ok';
+            sendStatus.textContent = `✓ ${NAME} has this one.`;
+            openModal('ticketModal');
+        }
+
+        // The planner again: to change a date (filled in with it) or to add another one
+        function openPlanner(d) {
+            changing = d || 'new';
+            form.reset();
+            otherTime.classList.add('hidden');
+            const otherDay = $('#otherDay');
+            otherDay.classList.add('hidden');
+            emailEl.value = (d || DATES[DATES.length - 1] || {}).email || '';
+            if (d) {
+                const chip = form.querySelector(`input[name="day"][value="${d.day}"]`);
+                if (chip) chip.checked = true;
+                else if (d.day >= otherDay.min && d.day <= otherDay.max) {
+                    form.querySelector('input[name="day"][value="other"]').checked = true;
+                    otherDay.value = d.day;
+                    otherDay.classList.remove('hidden');
+                }
+                const plan = [...form.querySelectorAll('input[name="plan"]')].find(r => r.value === d.plan);
+                if (plan) plan.checked = true;
+                const time = [...form.querySelectorAll('input[name="time"]')].find(r => r.value === d.time);
+                if (time) time.checked = true;
+                else { form.querySelector('input[name="time"][value="other"]').checked = true; otherTime.value = d.time; otherTime.classList.remove('hidden'); }
+                $('#note').value = d.note || '';
+            }
+            showPickedDay();
+            const pet = PAGE.pet_name || 'love';
+            $('#planTitle').textContent = d ? 'Change of plans? 💕' : 'Another date? Yes please 💕';
+            $('#planModal .sub').textContent = d ? `Pick the new plan, ${pet}. ${NAME} gets it right away.` : `Pick one more, ${pet}. ${NAME} will be thrilled.`;
+            formError.textContent = '';
+            refreshSubmit();
+            openModal('planModal');
         }
 
         const pad = n => String(n).padStart(2, '0');
@@ -1483,12 +1743,17 @@
             'you make the stars shine brighter ✨', "i'm just a cat but i ship it", `${n} talks about you. a lot. i would know.`,
             'hopeless romantic. certified.', 'did you see that shooting star? make a wish 🌠', `${n} knows your coffee order by heart ☕`
         ];
+        // On a computer the cat mentions fullscreen (F). Not on phones, and not in the builder's preview.
+        const FULLSCREEN_LINE = 'on a computer? press F for fullscreen ✨';
+        const ON_PC = !PREVIEW && matchMedia('(hover: hover) and (pointer: fine)').matches;
+        if (ON_PC) CAT_LINES.push(FULLSCREEN_LINE);
         const CAT_NO_LINES = ['hehe, it\'s scared of you', 'that button has trust issues', 'try the pink one 👉', 'wrong one, cutie'];
         const CAT_YES_LINES = ['YAYYY I KNEW IT 💕', PAGE ? `${n}'s going to be SO happy` : 'he\'s going to be SO happy', 'best. decision. ever. 🎉'];
         const CAT_AFTER_LINES = [
             'can i come too? no? okay 🥲', 'wear something comfy, you\'ll laugh a lot', PAGE ? `${n}'s already planning the next one` : 'he\'s already planning the next one',
             'pick dessert. trust me 🍰', 'you two are still so cute. i said what i said.', 'don\'t forget to save the date 📅'
         ];
+        if (ON_PC) CAT_AFTER_LINES.push(FULLSCREEN_LINE);
 
         const cat = (() => {
             const el = $('#cat'), cv = el.querySelector('canvas'), g = cv.getContext('2d'), bubble = $('#bubble');
@@ -1676,7 +1941,11 @@
                 state = 'sit'; until = Infinity;
                 setInterval(() => talk(nextLine()), 9000);
             }
-            const hello = (ms = 2600) => setTimeout(() => talk(PAGE ? `hi! 👋 i'm ${n}'s wingcat` : 'hi! 👋 i\'m his wingcat', 3500), ms);
+            const hello = (ms = 2600) => {
+                setTimeout(() => talk(PAGE ? `hi! 👋 i'm ${n}'s wingcat` : 'hi! 👋 i\'m his wingcat', 3500), ms);
+                // Then, on a computer, a tip: F for fullscreen
+                if (ON_PC) setTimeout(() => react(FULLSCREEN_LINE, 4200), ms + 4200);
+            };
             // After the welcome, the little cat starts at the bottom centre, clear of the question and the buttons
             function arrive() {
                 const { w, h } = size();
@@ -1709,6 +1978,19 @@
                 setTimeout(() => welcomeEl.remove(), 800);
             });
             setTimeout(() => $('#welcomeBtn').focus({ preventScroll: true }), 60);
+        }
+
+        // Coming back after the date is set: the page opens straight on "see you"
+        if (DATES.length) {
+            renderSet();
+            const title = $('#welcomeTitle');
+            if (title) {
+                const grad = document.createElement('span');
+                grad.className = 'grad';
+                grad.textContent = 'see you';
+                title.textContent = '';
+                title.append(`${NAME} can't wait to `, grad, `, ${PAGE.pet_name || 'love'}`);
+            }
         }
     })();
     </script>
