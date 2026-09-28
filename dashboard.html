@@ -68,6 +68,27 @@
         .quiet { color: var(--muted); font-size: .88rem; padding: 6px 2px; }
 
         .reports { padding: 18px; margin-top: 22px; }
+        .reports .sec:first-child { margin-top: 0; }
+        .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+        .stat { border-radius: 14px; padding: 11px 13px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
+        .stat small { display: block; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+        .stat b { font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 1.45rem; }
+        .all-search { margin-top: 12px; }
+        .all-list { display: grid; gap: 8px; margin-top: 10px; }
+        .all-row { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+        .all-row.is-hidden { opacity: .6; }
+        .all-row .pic { width: 44px; height: 54px; border-radius: 11px; flex: none; background: rgba(255, 255, 255, .06) center / cover no-repeat; display: grid; place-items: center; font-size: 1.2rem; }
+        .all-row .pic.has { font-size: 0; }
+        .all-row .info { min-width: 0; flex: 1; }
+        .all-row .t { font-weight: 600; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .all-row .h { font-size: .84rem; color: #dcd6e2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+        .all-row .u { font-size: .74rem; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .all-row .acts { margin-top: 0; flex: none; }
+        @media (max-width: 860px) {
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .all-row { flex-wrap: wrap; }
+            .all-row .acts { width: 100%; }
+        }
         .report { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); margin-top: 10px; }
         .report.resolved { opacity: .6; }
         .report .r-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .86rem; }
@@ -304,13 +325,77 @@
             return t;
         }
 
-        // ----- Admin: reported pages, hide/unhide -----
+        // ----- Admin (Mark only): every page on the site, reported pages, hide/unhide -----
+        // Admins can see every page (RLS allows it), but never other people's answers.
+        function hideButton(pg) {
+            const b = el('button', 'btn btn-glass btn-small' + (pg.hidden ? '' : ' danger'), pg.hidden ? 'Unhide page' : 'Hide page');
+            b.type = 'button';
+            b.addEventListener('click', async () => {
+                if (!pg.hidden && !confirm(`Hide /p/${pg.slug}? Nobody will be able to open it until you unhide it.`)) return;
+                const { error } = await sb.from('pages').update({ hidden: !pg.hidden }).eq('id', pg.id);
+                if (error) return toast(friendlyError(error));
+                toast(pg.hidden ? 'Page is visible again' : 'Page hidden');
+                renderAdmin();
+            });
+            return b;
+        }
+
+        async function renderAllPages(box) {
+            box.append(el('div', 'sec', 'All pages'));
+            const { data: all, error } = await sb.from('pages').select('id,slug,owner_id,sender_name,pet_name,headline,photo_path,hidden,created_at').order('created_at', { ascending: false }).limit(1000);
+            if (error) return box.append(el('p', 'quiet err', friendlyError(error)));
+            const weekAgo = Date.now() - 7 * 864e5;
+            const stats = el('div', 'stats');
+            for (const [k, v] of [['Pages', all.length], ['Made this week', all.filter(p => new Date(p.created_at) > weekAgo).length],
+                                  ['Creators', new Set(all.map(p => p.owner_id)).size], ['Hidden', all.filter(p => p.hidden).length]]) {
+                const st = el('div', 'stat');
+                st.append(el('small', null, k), el('b', null, String(v)));
+                stats.append(st);
+            }
+            box.append(stats);
+            if (!all.length) return box.append(el('p', 'quiet', 'Nobody has made a page yet. They\'ll show up here as soon as someone does. 🌅'));
+
+            const search = el('input', 'field all-search');
+            search.type = 'search';
+            search.placeholder = 'Search by name, headline or link…';
+            search.setAttribute('aria-label', 'Search all pages');
+            const list = el('div', 'all-list');
+            box.append(search, list);
+            const draw = () => {
+                const q = search.value.trim().toLowerCase();
+                list.innerHTML = '';
+                const shown = all.filter(p => !q || [p.sender_name, p.pet_name, p.headline, p.slug].some(v => (v || '').toLowerCase().includes(q)));
+                if (!shown.length) list.append(el('p', 'quiet', 'No pages match that.'));
+                for (const pg of shown) {
+                    const row = el('div', 'all-row' + (pg.hidden ? ' is-hidden' : ''));
+                    const pic = el('span', 'pic' + (pg.photo_path ? ' has' : ''), '💌');
+                    if (pg.photo_path) pic.style.backgroundImage = `url("${photoUrl(pg.photo_path)}")`;
+                    const info = el('div', 'info');
+                    const u = el('div', 'u');
+                    u.append(el('span', null, '/p/' + pg.slug), el('span', null, new Date(pg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })));
+                    if (pg.hidden) u.append(el('span', 'pill hidden-pill', 'Hidden'));
+                    if (pg.owner_id === user.id) u.append(el('span', 'pill', 'Yours'));
+                    info.append(el('div', 't', pg.sender_name + (pg.pet_name ? ` → ${pg.pet_name}` : '')), el('div', 'h', pg.headline), u);
+                    const acts = el('div', 'acts');
+                    const open = el('a', 'btn btn-glass btn-small', 'Open ↗');
+                    open.href = pageLink(pg.slug); open.target = '_blank'; open.rel = 'noopener';
+                    acts.append(open, hideButton(pg));
+                    row.append(pic, info, acts);
+                    list.append(row);
+                }
+            };
+            search.addEventListener('input', draw);
+            draw();
+        }
+
         async function renderAdmin() {
             const view = $('#adminView');
             view.innerHTML = '';
+            const allBox = el('div', 'glass reports');
             const box = el('div', 'glass reports');
             box.append(el('div', 'sec', 'Reported pages'));
-            view.append(box);
+            view.append(allBox, box);
+            renderAllPages(allBox);
             const { data: reports, error } = await sb.from('reports').select('*').order('created_at', { ascending: false }).limit(200);
             if (error) return box.append(el('p', 'quiet err', friendlyError(error)));
             if (!reports.length) return box.append(el('p', 'quiet', 'No reports. Everyone\'s being lovely. 💕'));
@@ -327,17 +412,7 @@
                 if (pg?.hidden) head.append(el('span', 'pill hidden-pill', 'Hidden'));
                 if (r.resolved) head.append(el('span', 'pill', 'Resolved'));
                 const acts = el('div', 'acts');
-                if (pg) {
-                    const hide = el('button', 'btn btn-glass btn-small' + (pg.hidden ? '' : ' danger'), pg.hidden ? 'Unhide page' : 'Hide page');
-                    hide.type = 'button';
-                    hide.addEventListener('click', async () => {
-                        const { error } = await sb.from('pages').update({ hidden: !pg.hidden }).eq('id', pg.id);
-                        if (error) return toast(friendlyError(error));
-                        toast(pg.hidden ? 'Page is visible again' : 'Page hidden');
-                        renderAdmin();
-                    });
-                    acts.append(hide);
-                }
+                if (pg) acts.append(hideButton(pg));
                 if (!r.resolved) {
                     const done = el('button', 'btn btn-glass btn-small', 'Mark resolved');
                     done.type = 'button';
