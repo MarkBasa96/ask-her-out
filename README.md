@@ -18,8 +18,33 @@ It started as one HTML file I made for my girlfriend. Now there's also a **free 
 
 ---
 
+## Screenshots
+
+**The page, step by step (on a phone):**
+
+| 1. Welcome | 2. The question | 3. The planner | 4. The ticket |
+|---|---|---|---|
+| <img src="docs/screenshots/welcome-phone.png" alt="Welcome screen: a big pixel cat waving over the blurred page, 'Mark has a question for you, love' and an Open it button" width="200"> | <img src="docs/screenshots/page-phone.png" alt="The question: 'Can I steal you for a date, love?' with Yes and No, and the pixel cat saying hi" width="200"> | <img src="docs/screenshots/planner-phone.png" alt="The planner: day cards, what we're doing, the time, her email and a note" width="200"> | <img src="docs/screenshots/ticket-phone.png" alt="The date ticket with Add to Google Calendar" width="200"> |
+
+**On a laptop:**
+
+![Welcome screen on a laptop: the pixel cat says hi over the blurred page](docs/screenshots/welcome-laptop.png)
+
+![The page on a laptop after opening it](docs/screenshots/page-laptop.png)
+
+**The builder and the dashboard** (for making your own):
+
+| Builder | Dashboard |
+|---|---|
+| ![The builder: the form and a live phone preview](docs/screenshots/builder-laptop.png) | ![The dashboard: your pages and their answers as date tickets](docs/screenshots/dashboard-laptop.png) |
+
+More screenshots are in each section below and in [`docs/screenshots/`](docs/screenshots/).
+
+---
+
 ## Contents
 
+- [Screenshots](#screenshots)
 - [What the page does](#what-the-page-does)
 - [Option 1: make your own page with the builder (no code)](#option-1-make-your-own-page-with-the-builder-no-code)
 - [Option 2: copy the repo and edit it yourself](#option-2-copy-the-repo-and-edit-it-yourself)
@@ -33,15 +58,19 @@ It started as one HTML file I made for my girlfriend. Now there's also a **free 
 
 ## What the page does
 
-A question sits under a moving night sky: "Can I steal you for a date, love?", with a Yes button, a No button, and a card about the hopeless romantic who's asking.
+**A cat says hi first.** The page opens blurred, behind a welcome card: a big pixel cat in the middle waves, licks its paw, blinks and wiggles its tail, with "Mark has a question for you, love" and an **Open it 💌** button. Tapping it clears the blur and starts the song **with sound** (browsers only allow sound after a tap, so this tap is what lets the music start properly, from the beginning).
+
+Then a question sits under a moving night sky: "Can I steal you for a date, love?", with a Yes button, a No button, and a card about the hopeless romantic who's asking.
 
 **The sky is alive.** Three layers of drifting, twinkling stars and a faint Milky Way band. Shooting stars every second or two, a bigger comet with a sparkling tail every few seconds, and every so often a group of stars joins up into a heart and fades. Slow purple and pink clouds drift behind everything, and embers float up from a sunset glow that rises when the page opens. Moving the mouse shifts the stars a little, and tapping the sky bursts out sparkles and hearts.
 
-**A pixel cat wanders around.** It walks anywhere on the screen, sometimes behind the words and sometimes in front of them. Now and then it stops, sits, and says something sweet in a speech bubble ("psst… he's still crazy about you", "10/10 boyfriend. would recommend."). Tap it and it talks. After a yes, it switches to celebrating.
+**A pixel cat wanders around.** After the welcome it hops down to the bottom of the screen and says hi, then walks anywhere, always on top of everything (even the pop-ups). Taps go straight through it, so it never blocks a button. Now and then it stops, sits, and says something sweet in a speech bubble ("psst… he's still crazy about you", "10/10 boyfriend. would recommend."). Tap it and it talks. After a yes, it switches to celebrating.
 
 **The No button runs away, forever.** It jumps when the mouse gets close, and on phones taps make it run instead of counting. Every escape makes Yes a bit bigger, No a bit smaller, and No says something new ("Are you sure, babe? 🥺"). It never gives up. If someone catches it with the keyboard, a kitten holding a heart asks them to reconsider.
 
-**Music plays softly.** A YouTube song starts when the page opens and loops. Browsers don't allow sound before the first tap, so it starts silently and turns the sound on at the first tap or key press. The speaker icon in the top bar mutes and unmutes it.
+**Music plays softly.** A YouTube song starts when **Open it** is tapped, with sound, and loops. The speaker icon in the top bar mutes and unmutes it.
+
+**Press F for fullscreen** (on a computer), and F again to leave. It's ignored while typing in a text box.
 
 **Yes opens the planner.** Confetti, then a frosted-glass pop-up: tappable day cards for the next three weeks, what you're doing (coffee, dinner, a movie or a surprise), a time (or "Other" for any time), their email and an optional note. The button says what's still missing instead of hiding.
 
@@ -108,7 +137,9 @@ On the dashboard you can also:
 
 ### What they see
 
-Your link opens your page. It's the same page as mine, with your words, photo and song.
+Your link opens your page. It's the same page as mine, with your words, photo and song. It starts with the waving cat and "*Your name* has a question for you, *pet name*".
+
+<img src="docs/screenshots/made-page-welcome.png" alt="The welcome screen of a page made with the builder: 'Jamie has a question for you, babe'" width="260">
 
 <img src="docs/screenshots/made-page-phone.png" alt="A page made with the builder: 'Wanna get dinner with me, babe?' with a photo card" width="260"> <img src="docs/screenshots/made-page-ticket.png" alt="The date ticket after they pick a day, plan and time" width="260">
 
@@ -177,7 +208,7 @@ No frameworks and no build step. It's plain HTML, CSS and JavaScript.
 - **Data:** [Supabase](https://supabase.com) handles magic-link sign-in, a Postgres database (`pages`, `answers`, `reports`, `admins`) and a `photos` storage bucket.
 - **Security:** every table uses Row Level Security. Anyone can *read* a page (that's how links work) and *answer* it. Only the page's owner can change it or read its answers. Only the admin can hide pages or read reports. The 5-page and 10-answers-per-hour limits are enforced in the database, not just the page.
 - **The sky** is drawn on a canvas. **The cat** is a 20×14 pixel sprite drawn in code. **The music** uses the YouTube IFrame API.
-- It works on phones, respects "reduce motion" (the sky and cat hold still), and the pop-ups work with a keyboard.
+- It works on phones, respects "reduce motion" (the sky and cat hold still), and the pop-ups work with a keyboard. **F** toggles fullscreen.
 
 **The logo** is a heart rising out of the glowing sunset arc, in the same orange-to-pink as the page. It's the browser-tab icon, the iPhone home-screen icon, and the mark in the top bar of every page.
 
@@ -206,7 +237,7 @@ The design was mocked up and approved before it was built:
 
 **No email arrived.** Check spam and wait a minute. The free email sender only sends a few emails per hour across the whole site, so try again later if it's busy.
 
-**There's no sound.** Browsers block sound until the first tap. Tap anywhere on the page, or the speaker icon in the top bar.
+**There's no sound.** The song starts when **Open it** is tapped. If the phone is on silent (the side switch on iPhone) or the volume is down, turn it up. If it's still quiet, tap the speaker icon in the top bar. A few in-app browsers are stricter than normal ones; opening the link in Safari or Chrome always works.
 
 **It says the link is taken.** Someone else has it (or it belongs to a hidden page). Add something, like `jamie-and-sam-2`.
 
