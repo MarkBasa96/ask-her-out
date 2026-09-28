@@ -490,6 +490,22 @@
         .day.pick span { width: 64px; }
         .day.pick b { font-size: 1.05rem; line-height: 1.45; }
         input[type="date"].field { color-scheme: dark; margin-top: 9px; }
+        .day-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+        .pick-date {
+            margin-bottom: 7px; padding: 6px 12px; border-radius: 99px; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+            color: #ffd0b8; border: 1px solid rgba(255, 120, 95, 0.55); background: rgba(255, 90, 95, 0.12); transition: background .2s;
+        }
+        .pick-date:hover { background: rgba(255, 90, 95, 0.22); }
+        .chips-wrap { position: relative; }
+        .chip-arrow {
+            position: absolute; top: 50%; z-index: 2; width: 32px; height: 32px; margin-top: -19px; border-radius: 50%; display: none;
+            font-size: 1.2rem; line-height: 1; cursor: pointer; color: #fff; border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(28, 25, 34, 0.92); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5); transition: opacity .2s;
+        }
+        .chip-arrow.prev { left: -8px; }
+        .chip-arrow.next { right: -8px; }
+        .chip-arrow.off { opacity: 0; pointer-events: none; }
+        @media (hover: hover) and (pointer: fine) { .chip-arrow { display: grid; place-items: center; } }
 
         /* After the date is locked in: "see you" instead of the question */
         .set { margin-top: 26px; width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; }
@@ -1390,6 +1406,54 @@
             field.min = iso(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
             field.max = iso(new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()));
             daysEl.after(field);
+
+            // On a computer the day cards can't be swiped, so: a "Pick a date" button that's always in view,
+            // arrows at the ends of the row, and the mouse wheel scrolls it sideways
+            const pickBtn = document.createElement('button');
+            pickBtn.type = 'button';
+            pickBtn.className = 'pick-date';
+            pickBtn.textContent = '📅 Pick a date';
+            pickBtn.addEventListener('click', () => {
+                const radio = label.querySelector('input');
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+                daysEl.scrollTo({ left: daysEl.scrollWidth, behavior: 'smooth' });   // the Other date card is last
+            });
+            const head = document.createElement('div');
+            head.className = 'day-head';
+            $('#dayLabel').before(head);
+            head.append($('#dayLabel'), pickBtn);
+
+            const wrap = document.createElement('div');
+            wrap.className = 'chips-wrap';
+            daysEl.before(wrap);
+            wrap.append(daysEl);
+            const arrows = ['prev', 'next'].map(dir => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'chip-arrow ' + dir;
+                b.textContent = dir === 'prev' ? '‹' : '›';
+                b.tabIndex = -1;   // keyboard users move with the arrow keys inside the radio group
+                b.setAttribute('aria-hidden', 'true');
+                b.addEventListener('click', () => daysEl.scrollBy({ left: (dir === 'prev' ? -1 : 1) * daysEl.clientWidth * 0.75, behavior: 'smooth' }));
+                wrap.append(b);
+                return b;
+            });
+            const edges = () => {
+                // The row snaps to its cards, so its ends are within the side padding, not exactly at 0
+                arrows[0].classList.toggle('off', daysEl.scrollLeft < 30);
+                arrows[1].classList.toggle('off', daysEl.scrollLeft + daysEl.clientWidth > daysEl.scrollWidth - 30);
+            };
+            daysEl.addEventListener('scroll', edges, { passive: true });
+            addEventListener('resize', edges);
+            daysEl.addEventListener('wheel', e => {
+                if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || daysEl.scrollWidth <= daysEl.clientWidth) return;
+                e.preventDefault();
+                daysEl.scrollBy({ left: e.deltaY * 1.4 });
+            }, { passive: false });
+            requestAnimationFrame(edges);
+            // The planner is hidden at first, so check the ends again whenever it opens
+            new MutationObserver(edges).observe($('#planModal'), { attributes: true, attributeFilter: ['class'] });
         })();
 
         // The "Other" day chip shows the date that was picked in it
